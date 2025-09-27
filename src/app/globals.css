@@ -1,26 +1,69 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Custom styles for healthcare theme */
+.layout-wrapper {
+  min-height: 100vh;
+}
+
+.layout-main {
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 60px);
+}
+
+/* PrimeReact customizations */
+.p-menubar {
+  background: #2563eb;
+  border: none;
+}
+
+.p-menubar .p-menuitem-link {
+  color: white;
+}
+
+.p-menubar .p-menuitem-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.p-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.p-datatable .p-datatable-header {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+.healthcare-card {
+  transition: transform 0.2s;
+}
+
+.healthcare-card:hover {
+  transform: translateY(-2px);
 }

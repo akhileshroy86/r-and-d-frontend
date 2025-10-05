@@ -6,16 +6,18 @@ import { Avatar } from 'primereact/avatar';
 import { Badge } from 'primereact/badge';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { t } = useLanguage();
 
   const getMenuItems = () => {
     if (!isAuthenticated || !user) return [];
 
     const commonItems = [
       {
-        label: 'Home',
+        label: t('home'),
         icon: 'pi pi-home',
         command: () => window.location.href = '/'
       }
@@ -26,7 +28,7 @@ const Navbar: React.FC = () => {
         return [
           ...commonItems,
           {
-            label: 'Doctors',
+            label: t('doctors'),
             icon: 'pi pi-users',
             items: [
               { label: 'Manage Doctors', icon: 'pi pi-user-plus' },
@@ -34,7 +36,7 @@ const Navbar: React.FC = () => {
             ]
           },
           {
-            label: 'Staff',
+            label: t('staff'),
             icon: 'pi pi-id-card',
             items: [
               { label: 'Manage Staff', icon: 'pi pi-user-plus' },
@@ -42,7 +44,7 @@ const Navbar: React.FC = () => {
             ]
           },
           {
-            label: 'Analytics',
+            label: t('analytics'),
             icon: 'pi pi-chart-line',
             items: [
               { label: 'Revenue Reports', icon: 'pi pi-dollar' },
@@ -50,7 +52,7 @@ const Navbar: React.FC = () => {
             ]
           },
           {
-            label: 'Settings',
+            label: t('settings'),
             icon: 'pi pi-cog'
           }
         ];
@@ -59,12 +61,12 @@ const Navbar: React.FC = () => {
         return [
           ...commonItems,
           {
-            label: 'Appointments',
+            label: t('appointments'),
             icon: 'pi pi-calendar',
             badge: '5'
           },
           {
-            label: 'Patients',
+            label: t('patients'),
             icon: 'pi pi-users'
           },
           {
@@ -82,7 +84,7 @@ const Navbar: React.FC = () => {
             badge: '12'
           },
           {
-            label: 'Appointments',
+            label: t('appointments'),
             icon: 'pi pi-calendar'
           },
           {
@@ -95,7 +97,7 @@ const Navbar: React.FC = () => {
         return [
           ...commonItems,
           {
-            label: 'Book Appointment',
+            label: t('bookAppointment'),
             icon: 'pi pi-plus'
           },
           {
@@ -114,9 +116,9 @@ const Navbar: React.FC = () => {
   };
 
   const start = (
-    <div className="flex align-items-center gap-2">
-      <i className="pi pi-heart-fill text-primary text-2xl"></i>
-      <span className="font-bold text-primary">HealthCare</span>
+    <div className="flex align-items-center gap-2 px-3 py-2 border-round" style={{ backgroundColor: '#f8f9fa' }}>
+      <i className="pi pi-heart-fill text-2xl" style={{ color: '#dc3545' }}></i>
+      <span className="font-bold" style={{ color: '#2c3e50' }}>{t('healthcare')}</span>
     </div>
   );
 

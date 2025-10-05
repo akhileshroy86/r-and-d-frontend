@@ -85,6 +85,27 @@ export interface Staff {
   isActive: boolean;
 }
 
+export interface ReceptionStaff {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  password?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  lastLogin?: string;
+  role: 'receptionist';
+  permissions: StaffPermissions;
+}
+
+export interface StaffFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
 export interface Booking {
   id: string;
   patientId: string;

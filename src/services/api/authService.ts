@@ -12,9 +12,23 @@ export interface RegisterData {
   role: string;
 }
 
+export interface PatientRegisterData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export const authService = {
+  // Login for all user types
   login: async (credentials: LoginCredentials) => {
     const response = await apiClient.post('/auth/login', credentials);
+    return response.data;
+  },
+
+  // Patient registration
+  registerPatient: async (userData: PatientRegisterData) => {
+    const response = await apiClient.post('/auth/patient/register', userData);
     return response.data;
   },
 

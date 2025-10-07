@@ -3,8 +3,16 @@ import { Booking, Queue } from '../../types/models';
 
 export const bookingService = {
   createBooking: async (bookingData: Partial<Booking>): Promise<Booking> => {
-    const response = await apiClient.post('/bookings', bookingData);
-    return response.data;
+    const appointmentData = {
+      patientId: 'temp_patient_id',
+      doctorId: bookingData.doctorId,
+      date: bookingData.date,
+      timeRange: `${bookingData.timeRange?.start} - ${bookingData.timeRange?.end}`,
+      notes: bookingData.symptoms,
+      duration: 30
+    };
+    const response = await apiClient.post('/appointments', appointmentData);
+    return response.data.appointment;
   },
 
   getUserBookings: async (userId: string): Promise<Booking[]> => {

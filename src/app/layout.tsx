@@ -5,7 +5,7 @@ import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
 import { Providers } from './providers';
-import Navbar from '../components/layout/Navbar';
+import ConditionalNavbar from '../components/layout/ConditionalNavbar';
 
 export const metadata: Metadata = {
   title: 'Healthcare Management System',
@@ -19,9 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      </head>
       <body className="font-sans">
         <Providers>
-          <Navbar />
+          <ConditionalNavbar />
           <main className="min-h-screen">
             {children}
           </main>

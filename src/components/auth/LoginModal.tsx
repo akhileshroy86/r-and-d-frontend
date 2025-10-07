@@ -9,6 +9,7 @@ import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Toast } from 'primereact/toast';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
+import { authService } from '../../services/api/authService';
 
 interface LoginModalProps {
   visible: boolean;
@@ -22,152 +23,169 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    mobile: '',
-    otp: '',
-    name: '',
-    language: 'en'
+    confirmPassword: '',
+    name: ''
   });
   const [isSignup, setIsSignup] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const languages = [
-    { label: 'English', value: 'en' },
-    { label: 'Telugu', value: 'te' },
-    { label: 'Hindi', value: 'hi' }
-  ];
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const sendOTP = async () => {
-    if (!formData.mobile || formData.mobile.length !== 10) {
-      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Enter valid mobile number' });
-      return;
-    }
-    
-    setLoading(true);
-    setTimeout(() => {
-      setOtpSent(true);
-      setLoading(false);
-      toast.current?.show({ severity: 'success', summary: 'Success', detail: 'OTP sent' });
-    }, 1000);
-  };
 
-  const handleLogin = async () => {
+
+  const handleSubmit = async () => {
     dispatch(loginStart());
     setLoading(true);
 
-    setTimeout(() => {
-      const mockUser = {
-        id: '1',
-        email: formData.email || formData.mobile,
-        role: userType,
-        name: formData.name || `${userType.charAt(0).toUpperCase() + userType.slice(1)} User`
-      };
+    try {
+      let response;
+      
+      if (userType === 'patient') {
+        if (isSignup) {
+          // Patient signup validation
+          if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'All fields are required' });
+            setLoading(false);
+            return;
+          }
+          if (formData.password !== formData.confirmPassword) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Passwords do not match' });
+            setLoading(false);
+            return;
+          }
+          response = await authService.registerPatient({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword
+          });
+        } else {
+          // Patient login
+          if (!formData.email || !formData.password) {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Email and password required' });
+            setLoading(false);
+            return;
+          }
+          response = await authService.login({ email: formData.email, password: formData.password });
+        }
+      } else {
+        // Staff/Doctor/Admin login
+        if (!formData.email || !formData.password) {
+          toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Email and password required' });
+          setLoading(false);
+          return;
+        }
+        response = await authService.login({ email: formData.email, password: formData.password });
+      }
+
+      // Store token in localStorage
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+      }
       
       dispatch(loginSuccess({
-        user: mockUser,
-        token: 'mock-jwt-token'
+        user: response.user,
+        token: response.token
       }));
       
-      setLoading(false);
       onHide();
+      resetForm();
       toast.current?.show({ 
         severity: 'success', 
         summary: 'Success', 
-        detail: `Welcome ${mockUser.name}!` 
+        detail: `Welcome ${response.user.name}!` 
       });
-    }, 1500);
+    } catch (error: any) {
+      dispatch(loginFailure());
+      toast.current?.show({ 
+        severity: 'error', 
+        summary: 'Error', 
+        detail: error.response?.data?.message || 'Authentication failed' 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
     setFormData({
       email: '',
       password: '',
-      mobile: '',
-      otp: '',
-      name: '',
-      language: 'en'
+      confirmPassword: '',
+      name: ''
     });
     setIsSignup(false);
-    setOtpSent(false);
   };
 
-  const renderPatientLogin = () => (
+  const renderPatientAuth = () => (
     <div className="flex flex-column gap-4">
+      {isSignup && (
+        <div className="field">
+          <label className="block text-900 font-medium mb-2">Full Name</label>
+          <InputText
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            placeholder="Enter your name"
+            className="w-full"
+          />
+        </div>
+      )}
+      
       <div className="field">
-        <label className="block text-900 font-medium mb-2">Mobile Number</label>
+        <label className="block text-900 font-medium mb-2">Email</label>
         <InputText
-          value={formData.mobile}
-          onChange={(e) => handleInputChange('mobile', e.target.value)}
-          placeholder="Enter 10-digit mobile"
+          value={formData.email}
+          onChange={(e) => handleInputChange('email', e.target.value)}
+          placeholder="Enter email"
           className="w-full"
-          maxLength={10}
+          type="email"
         />
       </div>
       
-      {!otpSent ? (
-        <Button
-          label="Send OTP"
-          onClick={sendOTP}
-          loading={loading}
+      <div className="field">
+        <label className="block text-900 font-medium mb-2">Password</label>
+        <Password
+          value={formData.password}
+          onChange={(e) => handleInputChange('password', e.target.value)}
+          placeholder="Enter password"
           className="w-full"
+          feedback={isSignup}
+          toggleMask
         />
-      ) : (
-        <>
-          <div className="field">
-            <label className="block text-900 font-medium mb-2">Enter OTP</label>
-            <InputText
-              value={formData.otp}
-              onChange={(e) => handleInputChange('otp', e.target.value)}
-              placeholder="Enter 6-digit OTP"
-              className="w-full"
-              maxLength={6}
-            />
-          </div>
-          
-          {isSignup && (
-            <>
-              <div className="field">
-                <label className="block text-900 font-medium mb-2">Full Name</label>
-                <InputText
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="field">
-                <label className="block text-900 font-medium mb-2">Language</label>
-                <Dropdown
-                  value={formData.language}
-                  options={languages}
-                  onChange={(e) => handleInputChange('language', e.value)}
-                  className="w-full"
-                />
-              </div>
-            </>
-          )}
-          
-          <Button
-            label={isSignup ? "Sign Up" : "Login"}
-            onClick={handleLogin}
-            loading={loading}
+      </div>
+      
+      {isSignup && (
+        <div className="field">
+          <label className="block text-900 font-medium mb-2">Confirm Password</label>
+          <Password
+            value={formData.confirmPassword}
+            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+            placeholder="Confirm password"
             className="w-full"
+            feedback={false}
+            toggleMask
           />
-          
-          <div className="text-center">
-            <Button
-              label={isSignup ? "Login" : "Sign Up"}
-              link
-              onClick={() => setIsSignup(!isSignup)}
-            />
-          </div>
-        </>
+        </div>
       )}
+      
+      <Button
+        label={isSignup ? "Sign Up" : "Login"}
+        onClick={handleSubmit}
+        loading={loading}
+        className="w-full"
+      />
+      
+      <div className="text-center">
+        <Button
+          label={isSignup ? "Already have an account? Login" : "Don't have an account? Sign Up"}
+          link
+          onClick={() => setIsSignup(!isSignup)}
+        />
+      </div>
     </div>
   );
 
@@ -197,7 +215,7 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
       
       <Button
         label="Login"
-        onClick={handleLogin}
+        onClick={handleSubmit}
         loading={loading}
         className="w-full"
       />
@@ -207,7 +225,7 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
   const getLoginContent = () => {
     switch (userType) {
       case 'patient':
-        return renderPatientLogin();
+        return renderPatientAuth();
       case 'staff':
       case 'doctor':
       case 'admin':

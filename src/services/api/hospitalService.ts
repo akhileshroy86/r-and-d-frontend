@@ -2,6 +2,11 @@ import { apiClient } from './apiClient';
 import { Hospital, Department } from '../../types/models';
 
 export const hospitalService = {
+  getAllHospitals: async (): Promise<Hospital[]> => {
+    const response = await apiClient.get('/hospitals');
+    return response.data;
+  },
+
   getNearbyHospitals: async (location: { latitude: number; longitude: number }): Promise<Hospital[]> => {
     const response = await apiClient.get('/hospitals/nearby', {
       params: { lat: location.latitude, lng: location.longitude }

@@ -1,17 +1,80 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from 'primereact/card';
 import { Chart } from 'primereact/chart';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
+import { Dialog } from 'primereact/dialog';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { RootState } from '../../store';
+import AdminHeader from './AdminHeader';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const router = useRouter();
+  const [doctors, setDoctors] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [viewDialog, setViewDialog] = useState({ visible: false, appointment: null });
+  const [editDialog, setEditDialog] = useState({ visible: false, appointment: null });
+
+  const fetchDoctors = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/doctors`);
+      if (response.ok) {
+        const data = await response.json();
+        setDoctors(data.data || data);
+      }
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+    }
+  };
+
+  const fetchStaff = async () => {
+    try {
+      console.log('Fetching staff from:', `${process.env.NEXT_PUBLIC_API_URL}/staff`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/staff`);
+      console.log('Staff response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Staff data received:', data);
+        setStaff(data.data || data);
+      } else {
+        console.error('Staff API error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+    }
+  };
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('http://localhost:3002/api/appointments');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Appointments data:', data);
+        console.log('First appointment:', data[0]);
+        setAppointments(data.slice(0, 10)); // Show only recent 10 appointments
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchDoctors(), fetchStaff(), fetchAppointments()]);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   // Mock data - replace with actual data from Redux store
   const stats = {
@@ -25,88 +88,7 @@ const AdminDashboard: React.FC = () => {
     offlinePayments: 7000
   };
 
-  const recentAppointments = [
-    {
-      id: '1',
-      patientName: 'John Doe',
-      doctorName: 'Dr. Smith',
-      time: '10:00 AM',
-      status: 'completed',
-      amount: 800
-    },
-    {
-      id: '2',
-      patientName: 'Jane Smith',
-      doctorName: 'Dr. Johnson',
-      time: '11:30 AM',
-      status: 'in-progress',
-      amount: 600
-    },
-    {
-      id: '3',
-      patientName: 'Mike Wilson',
-      doctorName: 'Dr. Brown',
-      time: '2:00 PM',
-      status: 'scheduled',
-      amount: 750
-    }
-  ];
 
-  const topDepartments = [
-    { name: 'Cardiology', revenue: 125000, patients: 85 },
-    { name: 'Orthopedics', revenue: 98000, patients: 72 },
-    { name: 'Neurology', revenue: 87000, patients: 58 }
-  ];
-
-  const chartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: [65000, 59000, 80000, 81000, 56000, 85000],
-        fill: false,
-        borderColor: '#42A5F5',
-        tension: 0.4
-      },
-      {
-        label: 'Appointments',
-        data: [280, 248, 340, 390, 200, 380],
-        fill: false,
-        borderColor: '#FFA726',
-        tension: 0.4
-      }
-    ]
-  };
-
-  const chartOptions = {
-    maintainAspectRatio: false,
-    aspectRatio: 0.6,
-    plugins: {
-      legend: {
-        labels: {
-          color: '#495057'
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: '#495057'
-        },
-        grid: {
-          color: '#ebedef'
-        }
-      },
-      y: {
-        ticks: {
-          color: '#495057'
-        },
-        grid: {
-          color: '#ebedef'
-        }
-      }
-    }
-  };
 
   const statusBodyTemplate = (rowData: any) => {
     const getSeverity = (status: string) => {
@@ -126,12 +108,9 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="p-4">
-      {/* Welcome Section */}
-      <div className="mb-4">
-        <h1>Welcome back, {user?.name}!</h1>
-        <p className="text-600">Here's what's happening at your hospital today.</p>
-      </div>
+    <div className="min-h-screen bg-white">
+      <AdminHeader />
+      <div className="p-4 bg-gray-50">
 
       {/* Stats Cards */}
       <div className="grid mb-4">
@@ -181,27 +160,93 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts and Tables */}
+      {/* Doctors and Staff Cards */}
       <div className="grid">
-        <div className="col-12 lg:col-8">
-          <Card title="Revenue & Appointments Trend">
-            <Chart type="line" data={chartData} options={chartOptions} height="300px" />
+        {/* Doctors Card */}
+        <div className="col-12 lg:col-6">
+          <Card title="Doctors">
+            {/* Doctors List */}
+            <div className="flex flex-column gap-3 mb-4">
+              {loading ? (
+                <div className="text-center p-4">Loading doctors...</div>
+              ) : doctors.length === 0 ? (
+                <div className="text-center p-4 text-600">No doctors found</div>
+              ) : (
+                doctors.slice(0, 3).map((doctor: any, index) => (
+                  <div key={index} className="flex align-items-center justify-content-between p-2 border-round surface-50">
+                    <div className="flex align-items-center gap-3">
+                      <div className="w-3rem h-3rem bg-blue-500 border-circle flex align-items-center justify-content-center text-white font-bold">
+                        {doctor.name?.charAt(0) || 'D'}
+                      </div>
+                      <div>
+                        <div className="font-medium text-900">{doctor.name}</div>
+                        <div className="text-sm text-600">{doctor.specialization}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">₹{doctor.consultationFee}</div>
+                      <div className="flex align-items-center gap-1 justify-content-end">
+                        <span className="w-0.5rem h-0.5rem border-circle bg-green-500"></span>
+                        <span className="text-sm text-green-600">Available</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button 
+                label="Manage Doctors" 
+                className="flex-1 bg-blue-500 border-blue-500" 
+                onClick={() => router.push('/admin/doctors')}
+              />
+              <Button label="Add Doctor" className="flex-1" outlined />
+            </div>
           </Card>
         </div>
-        <div className="col-12 lg:col-4">
-          <Card title="Top Departments">
-            <div className="flex flex-column gap-3">
-              {topDepartments.map((dept, index) => (
-                <div key={index} className="flex justify-content-between align-items-center p-2 border-round surface-100">
-                  <div>
-                    <div className="font-medium">{dept.name}</div>
-                    <div className="text-sm text-600">{dept.patients} patients</div>
+        
+        {/* Staff Card */}
+        <div className="col-12 lg:col-6">
+          <Card title="Staff / Reception">
+            {/* Staff List */}
+            <div className="flex flex-column gap-3 mb-4">
+              {loading ? (
+                <div className="text-center p-4">Loading staff...</div>
+              ) : staff.length === 0 ? (
+                <div className="text-center p-4 text-600">No staff found</div>
+              ) : (
+                staff.slice(0, 3).map((staffMember: any, index) => (
+                  <div key={index} className="flex align-items-center justify-content-between p-2 border-round surface-50">
+                    <div className="flex align-items-center gap-3">
+                      <div className="w-3rem h-3rem bg-green-500 border-circle flex align-items-center justify-content-center text-white font-bold">
+                        {staffMember.fullName?.charAt(0) || 'S'}
+                      </div>
+                      <div>
+                        <div className="font-medium text-900">{staffMember.fullName}</div>
+                        <div className="text-sm text-600">{staffMember.position}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{staffMember.email}</div>
+                      <div className={`text-sm ${
+                        staffMember.isActive ? 'text-green-600' : 'text-red-600'
+                      }`}>{staffMember.isActive ? 'Active' : 'Inactive'}</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold">₹{dept.revenue.toLocaleString()}</div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button 
+                label="Manage Staff" 
+                className="flex-1 bg-blue-500 border-blue-500" 
+                onClick={() => router.push('/admin/staff')}
+              />
+              <Button label="Add Staff" className="flex-1" outlined />
             </div>
           </Card>
         </div>
@@ -210,18 +255,45 @@ const AdminDashboard: React.FC = () => {
       {/* Recent Appointments */}
       <div className="mt-4">
         <Card title="Recent Appointments">
-          <DataTable value={recentAppointments} responsiveLayout="scroll">
-            <Column field="patientName" header="Patient" />
-            <Column field="doctorName" header="Doctor" />
-            <Column field="time" header="Time" />
-            <Column field="status" header="Status" body={statusBodyTemplate} />
-            <Column field="amount" header="Amount" body={amountBodyTemplate} />
+          <DataTable value={appointments} responsiveLayout="scroll" loading={loading}>
+            <Column field="id" header="Appointment ID" />
+            <Column field="timeRange" header="Time" />
+            <Column 
+              field="date" 
+              header="Date" 
+              body={(rowData) => new Date(rowData.date).toLocaleDateString()}
+            />
             <Column
               header="Actions"
-              body={() => (
+              body={(rowData) => (
                 <div className="flex gap-2">
-                  <Button icon="pi pi-eye" className="p-button-rounded p-button-text" />
-                  <Button icon="pi pi-pencil" className="p-button-rounded p-button-text" />
+                  <Button 
+                    icon="pi pi-eye" 
+                    className="p-button-rounded p-button-text" 
+                    onClick={() => setViewDialog({ visible: true, appointment: rowData })}
+                    tooltip="View Details"
+                  />
+                  <Button 
+                    icon="pi pi-pencil" 
+                    className="p-button-rounded p-button-text" 
+                    onClick={() => setEditDialog({ visible: true, appointment: rowData })}
+                    tooltip="Edit Appointment"
+                  />
+                  <Button 
+                    icon="pi pi-trash" 
+                    className="p-button-rounded p-button-text p-button-danger" 
+                    onClick={() => {
+                      confirmDialog({
+                        message: `Are you sure you want to delete appointment ${rowData.id}?`,
+                        header: 'Delete Confirmation',
+                        icon: 'pi pi-exclamation-triangle',
+                        accept: () => {
+                          console.log(`Deleting appointment ${rowData.id}`);
+                        }
+                      });
+                    }}
+                    tooltip="Delete Appointment"
+                  />
                 </div>
               )}
             />
@@ -260,6 +332,48 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </div>
       </div>
+      </div>
+      
+      {/* View Dialog */}
+      <Dialog 
+        header="Appointment Details" 
+        visible={viewDialog.visible} 
+        onHide={() => setViewDialog({ visible: false, appointment: null })}
+        style={{ width: '450px' }}
+      >
+        {viewDialog.appointment && (
+          <div className="flex flex-column gap-3">
+            <div><strong>ID:</strong> {viewDialog.appointment.id}</div>
+            <div><strong>Date:</strong> {new Date(viewDialog.appointment.date).toLocaleDateString()}</div>
+            <div><strong>Time:</strong> {viewDialog.appointment.timeRange}</div>
+            <div><strong>Duration:</strong> {viewDialog.appointment.duration} minutes</div>
+            <div><strong>Notes:</strong> {viewDialog.appointment.notes || 'No notes'}</div>
+          </div>
+        )}
+      </Dialog>
+      
+      {/* Edit Dialog */}
+      <Dialog 
+        header="Edit Appointment" 
+        visible={editDialog.visible} 
+        onHide={() => setEditDialog({ visible: false, appointment: null })}
+        style={{ width: '450px' }}
+      >
+        {editDialog.appointment && (
+          <div className="flex flex-column gap-3">
+            <p>Edit functionality for appointment {editDialog.appointment.id} will be implemented here.</p>
+            <Button 
+              label="Save Changes" 
+              onClick={() => {
+                console.log('Saving changes for appointment', editDialog.appointment.id);
+                setEditDialog({ visible: false, appointment: null });
+              }}
+            />
+          </div>
+        )}
+      </Dialog>
+      
+      <ConfirmDialog />
     </div>
   );
 };

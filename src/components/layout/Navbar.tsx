@@ -4,13 +4,22 @@ import React from 'react';
 import { Menubar } from 'primereact/menubar';
 import { Avatar } from 'primereact/avatar';
 import { Badge } from 'primereact/badge';
-import { useSelector } from 'react-redux';
+import { Button } from 'primereact/button';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { logout } from '../../store/slices/authSlice';
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { t } = useLanguage();
+  const dispatch = useDispatch();
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    dispatch(logout());
+  };
 
   const getMenuItems = () => {
     if (!isAuthenticated || !user) return [];
@@ -138,17 +147,16 @@ const Navbar: React.FC = () => {
           <div className="text-sm text-600 capitalize">{user?.role}</div>
         </div>
       </div>
+      <Button
+        label="Sign Out"
+        icon="pi pi-sign-out"
+        className="p-button-outlined p-button-sm"
+        onClick={handleSignOut}
+      />
     </div>
   ) : null;
 
-  return (
-    <Menubar 
-      model={getMenuItems()} 
-      start={start} 
-      end={end}
-      className="border-none shadow-2"
-    />
-  );
+  return null;
 };
 
 export default Navbar;

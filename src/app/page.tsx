@@ -9,39 +9,45 @@ import AdminDashboard from '../components/admin/AdminDashboard';
 import DoctorDashboard from '../components/doctor/DoctorDashboard';
 import StaffDashboard from '../components/staff/StaffDashboard';
 import LoginModal from '../components/auth/LoginModal';
+import AdminAuthModal from '../components/auth/AdminAuthModal';
+import { useAdminAuth } from '../hooks/custom/useAdminAuth';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 
 export default function Home() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
+  const { loading: adminLoading } = useAdminAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const [loginModal, setLoginModal] = useState<{
     visible: boolean;
     userType: 'patient' | 'doctor' | 'staff' | 'admin';
   }>({ visible: false, userType: 'patient' });
+  const [adminAuthModal, setAdminAuthModal] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      switch (user.role) {
-        case 'admin':
-          router.push('/admin/staff');
-          break;
-        case 'staff':
-          router.push('/staff');
-          break;
-        case 'doctor':
-          router.push('/doctor');
-          break;
-        case 'patient':
-        default:
-          router.push('/patient');
-          break;
-      }
-    }
-  }, [isAuthenticated, user, router]);
+  // Show loading while checking authentication or mounting
+  if (adminLoading || !mounted) {
+    return (
+      <div className="min-h-screen flex align-items-center justify-content-center">
+        <div className="text-center">
+          <i className="pi pi-spin pi-spinner text-4xl text-primary mb-3"></i>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const openLoginModal = (userType: 'patient' | 'doctor' | 'staff' | 'admin') => {
-    setLoginModal({ visible: true, userType });
+    if (userType === 'admin') {
+      setAdminAuthModal(true);
+    } else {
+      setLoginModal({ visible: true, userType });
+    }
   };
 
   const closeLoginModal = () => {
@@ -110,6 +116,11 @@ export default function Home() {
           visible={loginModal.visible}
           onHide={closeLoginModal}
           userType={loginModal.userType}
+        />
+        
+        <AdminAuthModal
+          visible={adminAuthModal}
+          onHide={() => setAdminAuthModal(false)}
         />
       </>
     );

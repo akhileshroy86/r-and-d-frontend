@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Authentication</title>
+</head>
+<body>
+    <h1>Clear Authentication Data</h1>
+    <button onclick="clearAuth()">Clear All Auth Data</button>
+    <div id="result"></div>
+    
+    <script>
+        function clearAuth() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.clear();
+            document.getElementById('result').innerHTML = '<p style="color: green;">Authentication data cleared! You can now close this tab and refresh localhost:3000</p>';
+        }
+    </script>
+</body>
+</html>

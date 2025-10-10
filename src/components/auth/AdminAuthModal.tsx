@@ -9,7 +9,8 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Divider } from 'primereact/divider';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { adminAuthService } from '../../services/api/adminAuthService';
+import { authService } from '../../services/api/authService';
+import { useRouter } from 'next/navigation';
 
 interface AdminAuthModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ interface AdminAuthModalProps {
 
 const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const toast = useRef<Toast>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -63,10 +65,13 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
     setLoading(true);
 
     try {
-      const response = await adminAuthService.signIn({
-        email: formData.email,
-        password: formData.password
-      });
+      const credentials = {
+        email: formData.email.trim(),
+        password: formData.password.trim()
+      };
+      console.log('Admin login attempt:', credentials);
+      const response = await authService.login(credentials);
+      console.log('Admin login response:', response);
 
       dispatch(loginSuccess({
         user: response.user,
@@ -84,12 +89,14 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
 
       onHide();
       resetForm();
+      router.push('/admin');
     } catch (error: any) {
+      console.error('Admin login error:', error);
       dispatch(loginFailure());
       toast.current?.show({ 
         severity: 'error', 
         summary: 'Login Failed', 
-        detail: error.response?.data?.message || 'Invalid credentials' 
+        detail: error.response?.data?.message || error.message || 'Invalid credentials' 
       });
     } finally {
       setLoading(false);
@@ -102,10 +109,11 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
     setLoading(true);
 
     try {
-      const response = await adminAuthService.signUp({
+      const response = await authService.register({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        role: 'admin'
       });
 
       toast.current?.show({ 
@@ -215,7 +223,7 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
               <span className="font-medium text-blue-900">Development Mode</span>
             </div>
             <p className="text-sm text-blue-700 m-0">
-              Use <strong>admin@test.com</strong> / <strong>admin123</strong> to sign in
+              Use <strong>admin@hospital.com</strong> / <strong>admin123</strong> to sign in
             </p>
           </div>
           
@@ -237,7 +245,8 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
               <InputText
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="admin@test.com"
+                placeholder="admin@hospital.com"
+                className="w-full"
                 type="email"
                 style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
               />
@@ -276,30 +285,41 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
               label={isSignUp ? 'Create Admin Account' : 'Sign In'}
               onClick={isSignUp ? handleSignUp : handleSignIn}
               loading={loading}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#dc2626',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                marginTop: '8px'
-              }}
+              className="w-full p-3"
+              severity="danger"
             />
+            
+            {!isSignUp && (
+              <Button
+                label="Test Mock Login"
+                onClick={async () => {
+                  try {
+                    const response = await authService.login({ email: 'admin@hospital.com', password: 'admin123' });
+                    console.log('Direct mock test success:', response);
+                    toast.current?.show({ severity: 'success', summary: 'Test Success', detail: 'Mock service works!' });
+                  } catch (error) {
+                    console.error('Direct mock test failed:', error);
+                    toast.current?.show({ severity: 'error', summary: 'Test Failed', detail: 'Mock service failed' });
+                  }
+                }}
+                className="w-full"
+                outlined
+                size="small"
+              />
+            )}
 
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px', marginTop: '20px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {isSignUp ? 'Already have an account?' : "Don't have an admin account?"}
-                </span>
-                <Button
-                  label={isSignUp ? ' Sign In' : ' Create Account'}
-                  link
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  style={{ fontSize: '14px', fontWeight: '600', color: '#dc2626', padding: '0 4px' }}
-                />
-              </div>
+            <Divider />
+
+            <div className="text-center">
+              <span className="text-600">
+                {isSignUp ? 'Already have an account?' : "Don't have an admin account?"}
+              </span>
+              <Button
+                label={isSignUp ? 'Sign In' : 'Create Account'}
+                link
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="ml-2"
+              />
             </div>
           </div>
         </div>

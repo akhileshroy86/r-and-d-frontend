@@ -13,10 +13,11 @@ import { Toast } from 'primereact/toast';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Toolbar } from 'primereact/toolbar';
 import { useStaffManagement, StaffMember } from '../../hooks/useStaffManagement';
+import { Message } from 'primereact/message';
 
 const StaffManagement: React.FC = () => {
   const toast = useRef<Toast>(null);
-  const { staffList, setStaffList, loading, addStaff, updateStaff, toggleStaffStatus } = useStaffManagement();
+  const { staffList, setStaffList, loading, error, addStaff, updateStaff, toggleStaffStatus, loadStaffList } = useStaffManagement();
   
   const [showDialog, setShowDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -25,35 +26,38 @@ const StaffManagement: React.FC = () => {
     fullName: '',
     email: '',
     phone: '',
+    position: 'Staff',
     password: ''
   });
 
-  // Initialize with mock data
+  // Initialize demo staff for fallback
   useEffect(() => {
-    setStaffList([
+    const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+    const demoStaff = [
       {
-        id: '1',
-        fullName: 'John Smith',
-        email: 'john.smith@hospital.com',
-        phone: '+91 9876543210',
-        isActive: true,
-        createdAt: '2024-01-15',
-        lastLogin: '2024-01-20 09:30'
+        email: 'john.smith@gmail.com',
+        password: 'john',
+        name: 'John Smith',
+        role: 'staff',
+        id: 'demo1'
       },
       {
-        id: '2',
-        fullName: 'Sarah Johnson',
-        email: 'sarah.j@hospital.com',
-        phone: '+91 9876543211',
-        isActive: false,
-        createdAt: '2024-01-10',
-        lastLogin: '2024-01-18 14:20'
+        email: 'sarah.johnson@gmail.com', 
+        password: 'sarah',
+        name: 'Sarah Johnson',
+        role: 'staff',
+        id: 'demo2'
       }
-    ]);
-  }, [setStaffList]);
+    ];
+    
+    const hasDemo = existingStaff.some((s: any) => s.id === 'demo1');
+    if (!hasDemo) {
+      localStorage.setItem('staffCredentials', JSON.stringify([...existingStaff, ...demoStaff]));
+    }
+  }, []);
 
   const openNew = () => {
-    setFormData({ fullName: '', email: '', phone: '', password: '' });
+    setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
     setEditMode(false);
     setShowDialog(true);
   };
@@ -63,6 +67,7 @@ const StaffManagement: React.FC = () => {
       fullName: staff.fullName,
       email: staff.email,
       phone: staff.phone,
+      position: staff.position || 'Staff',
       password: ''
     });
     setSelectedStaff(staff);
@@ -71,7 +76,7 @@ const StaffManagement: React.FC = () => {
   };
 
   const saveStaff = async () => {
-    if (!formData.fullName || !formData.email || !formData.phone || (!editMode && !formData.password)) {
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.position) {
       toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Please fill all required fields' });
       return;
     }
@@ -86,13 +91,14 @@ const StaffManagement: React.FC = () => {
     toast.current?.show({
       severity: result.success ? 'success' : 'error',
       summary: result.success ? 'Success' : 'Error',
-      detail: result.message
+      detail: result.message,
+      life: result.success && !editMode ? 10000 : 3000
     });
 
     if (result.success) {
       setShowDialog(false);
       setSelectedStaff(null);
-      setFormData({ fullName: '', email: '', phone: '', password: '' });
+      setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
     }
   };
 
@@ -148,83 +154,7 @@ const StaffManagement: React.FC = () => {
     />
   );
 
-  const exportToExcel = () => {
-    const exportData = staffList.map(staff => ({
-      'Full Name': staff.fullName,
-      'Email': staff.email,
-      'Phone': staff.phone,
-      'Status': staff.isActive ? 'Active' : 'Inactive',
-      'Created Date': staff.createdAt,
-      'Last Login': staff.lastLogin || 'Never'
-    }));
-
-    const worksheet = {
-      'A1': { v: 'Full Name', t: 's' },
-      'B1': { v: 'Email', t: 's' },
-      'C1': { v: 'Phone', t: 's' },
-      'D1': { v: 'Status', t: 's' },
-      'E1': { v: 'Created Date', t: 's' },
-      'F1': { v: 'Last Login', t: 's' }
-    };
-
-    exportData.forEach((row, index) => {
-      const rowNum = index + 2;
-      worksheet[`A${rowNum}`] = { v: row['Full Name'], t: 's' };
-      worksheet[`B${rowNum}`] = { v: row['Email'], t: 's' };
-      worksheet[`C${rowNum}`] = { v: row['Phone'], t: 's' };
-      worksheet[`D${rowNum}`] = { v: row['Status'], t: 's' };
-      worksheet[`E${rowNum}`] = { v: row['Created Date'], t: 's' };
-      worksheet[`F${rowNum}`] = { v: row['Last Login'], t: 's' };
-    });
-
-    worksheet['!ref'] = `A1:F${exportData.length + 1}`;
-
-    const workbook = {
-      Sheets: { 'Staff List': worksheet },
-      SheetNames: ['Staff List']
-    };
-
-    const excelBuffer = writeXLSX(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `staff-list-${new Date().toISOString().split('T')[0]}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast.current?.show({
-      severity: 'success',
-      summary: 'Export Successful',
-      detail: 'Staff list exported to Excel',
-      life: 3000
-    });
-  };
-
-  const writeXLSX = (workbook: any, options: any) => {
-    const s2ab = (s: string) => {
-      const buf = new ArrayBuffer(s.length);
-      const view = new Uint8Array(buf);
-      for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
-      return buf;
-    };
-
-    const wbout = JSON.stringify(workbook);
-    return s2ab(wbout);
-  };
-
-  const rightToolbarTemplate = () => (
-    <div className="flex gap-2">
-      <Button 
-        label="Export Excel" 
-        icon="pi pi-file-excel" 
-        className="p-button-success" 
-        outlined
-        onClick={exportToExcel}
-        disabled={staffList.length === 0}
-      />
-    </div>
-  );
+  const rightToolbarTemplate = () => null;
 
   return (
     <div className="staff-management p-4">
@@ -232,10 +162,17 @@ const StaffManagement: React.FC = () => {
       <ConfirmDialog />
       
       <Card title="Staff Management">
+        {error && (
+          <Message 
+            severity="error" 
+            text={error} 
+            className="mb-3"
+          />
+        )}
+        
         <Toolbar 
           className="mb-4" 
-          left={leftToolbarTemplate} 
-          right={rightToolbarTemplate}
+          left={leftToolbarTemplate}
         />
         
         <DataTable 
@@ -249,6 +186,7 @@ const StaffManagement: React.FC = () => {
           <Column field="fullName" header="Full Name" sortable />
           <Column field="email" header="Email" sortable />
           <Column field="phone" header="Phone" />
+          <Column field="position" header="Position" sortable />
           <Column field="createdAt" header="Created" sortable />
           <Column field="lastLogin" header="Last Login" />
           <Column field="isActive" header="Status" body={statusBodyTemplate} sortable />
@@ -264,6 +202,14 @@ const StaffManagement: React.FC = () => {
         onHide={() => setShowDialog(false)}
       >
         <div className="flex flex-column gap-3">
+          <div className="p-3 border-round bg-blue-50 border-blue-200 mb-3">
+            <h4 className="mt-0 mb-2 text-blue-900">🔑 Auto-Generated Login</h4>
+            <p className="m-0 text-blue-800 text-sm">
+              Password will be automatically generated from the first name in the email address.
+              <br />
+              Example: john.smith@gmail.com → Password: "john"
+            </p>
+          </div>
           <div>
             <label htmlFor="fullName" className="block mb-2">Full Name *</label>
             <InputText
@@ -299,18 +245,28 @@ const StaffManagement: React.FC = () => {
           </div>
           
           <div>
-            <label htmlFor="password" className="block mb-2">
-              Password {!editMode && '*'}
-            </label>
-            <Password
-              id="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            <label htmlFor="position" className="block mb-2">Position *</label>
+            <InputText
+              id="position"
+              value={formData.position}
+              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
               className="w-full"
-              placeholder={editMode ? "Leave blank to keep current password" : "Enter password"}
-              toggleMask
+              placeholder="Enter position/role"
             />
           </div>
+          
+          {!editMode && (
+            <div className="p-3 border-round bg-blue-50 border-blue-200">
+              <h4 className="mt-0 mb-2 text-blue-900">🔐 Login Credentials</h4>
+              <p className="m-0 text-blue-800 text-sm">
+                Password will be auto-generated from the first name of the Gmail address.
+                <br />
+                <strong>Examples:</strong> 
+                <br />• john.doe@gmail.com → password: "john"
+                <br />• rakesh@gmail.com → password: "rakesh"
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-content-end gap-2 mt-4">

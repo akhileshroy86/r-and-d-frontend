@@ -4,19 +4,19 @@ import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { RootState } from '../../store';
-import StaffDashboard from '../../components/staff/StaffDashboard';
+import AdminDashboard from '../../components/admin/AdminDashboard';
 
-export default function StaffDashboardPage() {
+export default function AdminDashboardPage() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== 'staff') {
+    if (!isAuthenticated || user?.role !== 'admin') {
       router.push('/');
     }
   }, [isAuthenticated, user?.role, router]);
 
-  if (!isAuthenticated || user?.role !== 'staff') {
+  if (!isAuthenticated || user?.role !== 'admin') {
     return (
       <div className="min-h-screen flex align-items-center justify-content-center">
         <div className="text-center">
@@ -27,5 +27,5 @@ export default function StaffDashboardPage() {
     );
   }
 
-  return <StaffDashboard />;
+  return <AdminDashboard />;
 }

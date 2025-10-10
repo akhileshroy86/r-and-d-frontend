@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { mockAuthService } from './mockAuthService';
 
 export interface LoginCredentials {
   email: string;
@@ -19,103 +20,103 @@ export interface PatientRegisterData {
   confirmPassword: string;
 }
 
+const USE_MOCK = process.env.NODE_ENV === 'development' || !process.env.NEXT_PUBLIC_API_URL;
+
 export const authService = {
   // Login for all user types
   login: async (credentials: LoginCredentials) => {
+    if (USE_MOCK) {
+      return await mockAuthService.login(credentials);
+    }
     try {
       const response = await apiClient.post('/auth/login', credentials);
       return response.data;
-    } catch (error: any) {
-      // Fallback for development
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 401 || error.response?.status === 404) {
-        // Test doctor account
-        if (credentials.email === 'doctor@test.com' && credentials.password === 'doctor123') {
-          return {
-            user: {
-              id: '1',
-              name: 'Dr. Test Doctor',
-              email: credentials.email,
-              role: 'doctor',
-              specialization: 'General Medicine',
-              createdAt: new Date().toISOString(),
-              isActive: true
-            },
-            token: 'dev-token-' + Date.now(),
-            message: 'Development login successful'
-          };
-        }
-        
-        // Test staff account
-        if (credentials.email === 'staff@test.com' && credentials.password === 'staff123') {
-          return {
-            user: {
-              id: '2',
-              name: 'Test Staff',
-              email: credentials.email,
-              role: 'staff',
-              department: 'Reception',
-              createdAt: new Date().toISOString(),
-              isActive: true
-            },
-            token: 'dev-token-' + Date.now(),
-            message: 'Development login successful'
-          };
-        }
-        
-        // Test patient account
-        if (credentials.email === 'patient@test.com' && credentials.password === 'patient123') {
-          return {
-            user: {
-              id: '3',
-              name: 'Test Patient',
-              email: credentials.email,
-              role: 'patient',
-              phone: '+1234567890',
-              createdAt: new Date().toISOString(),
-              isActive: true
-            },
-            token: 'dev-token-' + Date.now(),
-            message: 'Development login successful'
-          };
-        }
-        
-        throw new Error('Invalid credentials');
-      }
-      throw error;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.login(credentials);
     }
   },
 
   // Patient registration
   registerPatient: async (userData: PatientRegisterData) => {
-    const response = await apiClient.post('/auth/patient/register', userData);
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.registerPatient(userData);
+    }
+    try {
+      const response = await apiClient.post('/auth/patient/register', userData);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.registerPatient(userData);
+    }
   },
 
   register: async (userData: RegisterData) => {
+    if (USE_MOCK) {
+      return await mockAuthService.register(userData);
+    }
     try {
       const response = await apiClient.post('/auth/register', userData);
       return response.data;
-    } catch (error: any) {
-      // Fallback for development
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        return { message: 'Registration successful (development mode)' };
-      }
-      throw error;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.register(userData);
     }
   },
 
   logout: async () => {
-    const response = await apiClient.post('/auth/logout');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.logout();
+    }
+    try {
+      const response = await apiClient.post('/auth/logout');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.logout();
+    }
   },
 
   refreshToken: async () => {
-    const response = await apiClient.post('/auth/refresh');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.refreshToken();
+    }
+    try {
+      const response = await apiClient.post('/auth/refresh');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.refreshToken();
+    }
   },
 
   getProfile: async () => {
-    const response = await apiClient.get('/auth/profile');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.getProfile();
+    }
+    try {
+      const response = await apiClient.get('/auth/profile');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.getProfile();
+    }
+  },
+
+  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
+    if (USE_MOCK) {
+      return await mockAuthService.changePassword(userId, currentPassword, newPassword);
+    }
+    try {
+      const response = await apiClient.post('/auth/change-password', {
+        userId,
+        currentPassword,
+        newPassword
+      });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.changePassword(userId, currentPassword, newPassword);
+    }
   }
 };

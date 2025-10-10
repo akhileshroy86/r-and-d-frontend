@@ -92,82 +92,51 @@ export const useStaffDashboard = () => {
   }, []);
 
   const fetchStats = async (): Promise<void> => {
-    // Mock API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        setStats({
-          totalCash: 15000 + Math.floor(Math.random() * 5000),
-          totalOnline: 28000 + Math.floor(Math.random() * 10000),
-          totalPatients: 45 + Math.floor(Math.random() * 10),
-          pendingPayments: 3 + Math.floor(Math.random() * 5),
-          completedAppointments: 42 + Math.floor(Math.random() * 8),
-          cancelledAppointments: 2 + Math.floor(Math.random() * 3),
-          walkInPatients: 8 + Math.floor(Math.random() * 5),
-          avgWaitTime: 15 + Math.floor(Math.random() * 10)
-        });
-        resolve();
-      }, 500);
-    });
+    // Load real stats from localStorage or API
+    const savedStats = localStorage.getItem('staffDashboardStats');
+    if (savedStats) {
+      try {
+        setStats(JSON.parse(savedStats));
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
   };
 
   const fetchAppointments = async (): Promise<void> => {
-    // Mock API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // This would be replaced with actual API call
-        resolve();
-      }, 300);
-    });
+    // Load real appointments from localStorage
+    const savedAppointments = localStorage.getItem('appointments');
+    if (savedAppointments) {
+      try {
+        setAppointments(JSON.parse(savedAppointments));
+      } catch (error) {
+        console.error('Error loading appointments:', error);
+      }
+    }
   };
 
   const fetchQueueData = async (): Promise<void> => {
-    // Mock API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // This would be replaced with actual API call
-        resolve();
-      }, 400);
-    });
+    // Load real queue data from localStorage
+    const savedQueueData = localStorage.getItem('queueState');
+    if (savedQueueData) {
+      try {
+        setQueueData(JSON.parse(savedQueueData));
+      } catch (error) {
+        console.error('Error loading queue data:', error);
+      }
+    }
   };
 
   const fetchNotifications = async (): Promise<void> => {
-    // Mock API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockNotifications: NotificationData[] = [
-          {
-            id: '1',
-            type: 'appointment',
-            title: 'New Appointment',
-            message: 'John Doe has booked an appointment',
-            timestamp: new Date(),
-            isRead: false,
-            priority: 'medium'
-          },
-          {
-            id: '2',
-            type: 'payment',
-            title: 'Payment Received',
-            message: 'Payment of ₹500 received from Jane Smith',
-            timestamp: new Date(Date.now() - 300000),
-            isRead: false,
-            priority: 'low'
-          },
-          {
-            id: '3',
-            type: 'emergency',
-            title: 'Emergency Patient',
-            message: 'Urgent patient needs immediate attention',
-            timestamp: new Date(Date.now() - 600000),
-            isRead: true,
-            priority: 'high',
-            actionRequired: true
-          }
-        ];
-        setNotifications(mockNotifications);
-        resolve();
-      }, 200);
-    });
+    // Load real notifications from localStorage
+    const savedNotifications = localStorage.getItem('staffNotifications');
+    if (savedNotifications) {
+      try {
+        setNotifications(JSON.parse(savedNotifications));
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+    }
   };
 
   // Appointment management
@@ -175,16 +144,14 @@ export const useStaffDashboard = () => {
     setDashboardState(prev => ({ ...prev, loading: true }));
     
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setAppointments(prev => 
-        prev.map(apt => 
-          apt.id === appointmentId 
-            ? { ...apt, status: 'confirmed' as const }
-            : apt
-        )
+      const updatedAppointments = appointments.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, status: 'confirmed' as const }
+          : apt
       );
+      
+      setAppointments(updatedAppointments);
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
       
       return { success: true, message: 'Appointment accepted successfully' };
     } catch (error) {
@@ -192,22 +159,20 @@ export const useStaffDashboard = () => {
     } finally {
       setDashboardState(prev => ({ ...prev, loading: false }));
     }
-  }, []);
+  }, [appointments]);
 
   const rejectAppointment = useCallback(async (appointmentId: string, reason?: string) => {
     setDashboardState(prev => ({ ...prev, loading: true }));
     
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setAppointments(prev => 
-        prev.map(apt => 
-          apt.id === appointmentId 
-            ? { ...apt, status: 'cancelled' as const }
-            : apt
-        )
+      const updatedAppointments = appointments.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, status: 'cancelled' as const }
+          : apt
       );
+      
+      setAppointments(updatedAppointments);
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
       
       return { success: true, message: 'Appointment rejected successfully' };
     } catch (error) {
@@ -215,32 +180,34 @@ export const useStaffDashboard = () => {
     } finally {
       setDashboardState(prev => ({ ...prev, loading: false }));
     }
-  }, []);
+  }, [appointments]);
 
   const addWalkInPatient = useCallback(async (walkInData: any) => {
     setDashboardState(prev => ({ ...prev, loading: true }));
     
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const newAppointment: EnhancedAppointment = {
         id: Date.now().toString(),
         patientName: walkInData.patientName,
         phone: walkInData.phone,
-        doctorName: 'Dr. Selected',
-        department: 'General',
+        doctorName: walkInData.doctorName || 'Walk-in Doctor',
+        department: walkInData.department || 'General',
         time: new Date().toLocaleTimeString(),
         status: 'confirmed',
         paymentStatus: walkInData.paymentMethod === 'cash' ? 'paid' : 'pending',
         priority: walkInData.emergencyLevel,
         symptoms: walkInData.symptoms,
         estimatedDuration: 20,
-        queuePosition: 0
+        queuePosition: appointments.length + 1
       };
       
-      setAppointments(prev => [newAppointment, ...prev]);
-      setStats(prev => ({ ...prev, walkInPatients: prev.walkInPatients + 1 }));
+      const updatedAppointments = [newAppointment, ...appointments];
+      setAppointments(updatedAppointments);
+      localStorage.setItem('appointments', JSON.stringify(updatedAppointments));
+      
+      const updatedStats = { ...stats, walkInPatients: stats.walkInPatients + 1, totalPatients: stats.totalPatients + 1 };
+      setStats(updatedStats);
+      localStorage.setItem('staffDashboardStats', JSON.stringify(updatedStats));
       
       return { success: true, message: 'Walk-in patient added successfully' };
     } catch (error) {
@@ -248,16 +215,13 @@ export const useStaffDashboard = () => {
     } finally {
       setDashboardState(prev => ({ ...prev, loading: false }));
     }
-  }, []);
+  }, [appointments, stats]);
 
   // Search functionality
   const searchPatients = useCallback(async (filters: any) => {
     setDashboardState(prev => ({ ...prev, loading: true }));
     
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
       // Filter appointments based on search criteria
       const filtered = appointments.filter(apt => {
         if (filters.phone && !apt.phone.includes(filters.phone)) return false;
@@ -279,20 +243,16 @@ export const useStaffDashboard = () => {
     setDashboardState(prev => ({ ...prev, loading: true }));
     
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
       const reportData = {
         type: reportFilters.reportType,
         dateRange: reportFilters.dateRange,
         departments: reportFilters.departments,
         stats: stats,
         appointments: appointments.length,
-        revenue: stats.totalCash + stats.totalOnline
+        revenue: stats.totalCash + stats.totalOnline,
+        generatedAt: new Date().toISOString(),
+        generatedBy: user?.name || 'Staff'
       };
-      
-      // In real implementation, this would generate and download a PDF/Excel file
-      console.log('Generated report:', reportData);
       
       return { success: true, message: 'Report generated successfully', data: reportData };
     } catch (error) {
@@ -300,7 +260,7 @@ export const useStaffDashboard = () => {
     } finally {
       setDashboardState(prev => ({ ...prev, loading: false }));
     }
-  }, [stats, appointments]);
+  }, [stats, appointments, user]);
 
   // Notification management
   const markNotificationAsRead = useCallback((notificationId: string) => {

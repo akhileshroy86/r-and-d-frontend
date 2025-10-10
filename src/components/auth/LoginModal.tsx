@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useDispatch } from 'react-redux';
+import { useRouter } from 'next/navigation';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
@@ -19,6 +20,7 @@ interface LoginModalProps {
 
 const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const toast = useRef<Toast>(null);
   const [formData, setFormData] = useState({
     email: '',
@@ -94,6 +96,18 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
       
       onHide();
       resetForm();
+      
+      // Navigate to appropriate dashboard
+      const roleRoutes = {
+        admin: '/admin',
+        doctor: '/doctor',
+        staff: '/staff',
+        patient: '/'
+      };
+      
+      const targetRoute = roleRoutes[response.user.role as keyof typeof roleRoutes] || '/';
+      router.push(targetRoute);
+      
       toast.current?.show({ 
         severity: 'success', 
         summary: 'Success', 

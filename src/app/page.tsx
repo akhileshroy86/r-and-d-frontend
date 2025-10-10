@@ -19,16 +19,23 @@ export default function Home() {
   const router = useRouter();
   const { loading: adminLoading } = useAdminAuth();
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
   const [loginModal, setLoginModal] = useState<{
     visible: boolean;
     userType: 'patient' | 'doctor' | 'staff' | 'admin';
   }>({ visible: false, userType: 'patient' });
   const [adminAuthModal, setAdminAuthModal] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Clear any existing auth data on page load to always show login selection
+  useEffect(() => {
+    if (mounted) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }, [mounted]);
 
   // Show loading while checking authentication or mounting
   if (adminLoading || !mounted) {
@@ -42,6 +49,12 @@ export default function Home() {
     );
   }
 
+  const clearAuthData = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.reload();
+  };
+
   const openLoginModal = (userType: 'patient' | 'doctor' | 'staff' | 'admin') => {
     if (userType === 'admin') {
       setAdminAuthModal(true);
@@ -54,11 +67,11 @@ export default function Home() {
     setLoginModal({ visible: false, userType: 'patient' });
   };
 
-  if (!isAuthenticated) {
-    return (
-      <>
-        <div className="min-h-screen flex align-items-center justify-content-center bg-gray-50">
-          <Card className="w-full max-w-md shadow-3">
+  // Always show login selection page
+  return (
+    <>
+      <div className="min-h-screen flex align-items-center justify-content-center bg-gray-50">
+        <Card className="w-full max-w-md shadow-3">
             <div className="text-center">
               <div className="mb-4">
                 <i className="pi pi-heart text-6xl text-primary mb-3"></i>
@@ -124,18 +137,4 @@ export default function Home() {
         />
       </>
     );
-  }
-
-  // Render dashboard based on user role
-  switch (user?.role) {
-    case 'admin':
-      return <AdminDashboard />;
-    case 'doctor':
-      return <DoctorDashboard />;
-    case 'staff':
-      return <StaffDashboard />;
-    case 'patient':
-    default:
-      return <HomePage />;
-  }
 }

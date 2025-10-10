@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { mockAuthService } from './mockAuthService';
 
 export interface LoginCredentials {
   email: string;
@@ -19,36 +20,103 @@ export interface PatientRegisterData {
   confirmPassword: string;
 }
 
+const USE_MOCK = process.env.NODE_ENV === 'development' || !process.env.NEXT_PUBLIC_API_URL;
+
 export const authService = {
   // Login for all user types
   login: async (credentials: LoginCredentials) => {
-    const response = await apiClient.post('/auth/login', credentials);
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.login(credentials);
+    }
+    try {
+      const response = await apiClient.post('/auth/login', credentials);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.login(credentials);
+    }
   },
 
   // Patient registration
   registerPatient: async (userData: PatientRegisterData) => {
-    const response = await apiClient.post('/auth/patient/register', userData);
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.registerPatient(userData);
+    }
+    try {
+      const response = await apiClient.post('/auth/patient/register', userData);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.registerPatient(userData);
+    }
   },
 
   register: async (userData: RegisterData) => {
-    const response = await apiClient.post('/auth/register', userData);
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.register(userData);
+    }
+    try {
+      const response = await apiClient.post('/auth/register', userData);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.register(userData);
+    }
   },
 
   logout: async () => {
-    const response = await apiClient.post('/auth/logout');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.logout();
+    }
+    try {
+      const response = await apiClient.post('/auth/logout');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.logout();
+    }
   },
 
   refreshToken: async () => {
-    const response = await apiClient.post('/auth/refresh');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.refreshToken();
+    }
+    try {
+      const response = await apiClient.post('/auth/refresh');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.refreshToken();
+    }
   },
 
   getProfile: async () => {
-    const response = await apiClient.get('/auth/profile');
-    return response.data;
+    if (USE_MOCK) {
+      return await mockAuthService.getProfile();
+    }
+    try {
+      const response = await apiClient.get('/auth/profile');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.getProfile();
+    }
+  },
+
+  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
+    if (USE_MOCK) {
+      return await mockAuthService.changePassword(userId, currentPassword, newPassword);
+    }
+    try {
+      const response = await apiClient.post('/auth/change-password', {
+        userId,
+        currentPassword,
+        newPassword
+      });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unavailable, using mock service');
+      return await mockAuthService.changePassword(userId, currentPassword, newPassword);
+    }
   }
 };

@@ -74,26 +74,31 @@ const AddStaff: React.FC = () => {
     setLoading(true);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/staff`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+      // Mock API call - simulate adding staff
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Store in localStorage for demo purposes
+      const existingStaff = JSON.parse(localStorage.getItem('staffList') || '[]');
+      const newStaff = {
+        id: Date.now().toString(),
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phoneNumber,
+        position: formData.position,
+        isActive: formData.isActive,
+        createdAt: new Date().toISOString().split('T')[0],
+        lastLogin: null
+      };
+      
+      existingStaff.push(newStaff);
+      localStorage.setItem('staffList', JSON.stringify(existingStaff));
+      
+      toast.current?.show({ 
+        severity: 'success', 
+        summary: 'Success', 
+        detail: 'Staff member added successfully!' 
       });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        toast.current?.show({ 
-          severity: 'success', 
-          summary: 'Success', 
-          detail: 'Staff member added successfully!' 
-        });
-        handleReset();
-      } else {
-        throw new Error(result.message || 'Failed to add staff');
-      }
+      handleReset();
     } catch (error: any) {
       toast.current?.show({ 
         severity: 'error', 

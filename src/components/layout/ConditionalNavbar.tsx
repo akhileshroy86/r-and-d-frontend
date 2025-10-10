@@ -11,8 +11,13 @@ const ConditionalNavbar = () => {
   
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setLocalUser(JSON.parse(storedUser));
+    if (storedUser && storedUser !== 'undefined') {
+      try {
+        setLocalUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('user');
+      }
     }
   }, []);
   

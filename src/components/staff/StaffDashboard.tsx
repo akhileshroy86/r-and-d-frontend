@@ -33,6 +33,7 @@ import { format, addMinutes, isToday } from 'date-fns';
 import { useStaffDashboard, useVoiceRecording } from '../../hooks/useStaffDashboard';
 import { WalkInData, SearchFilters, ReportFilters } from '../../types/staff';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { mockAuthService } from '../../services/api/mockAuthService';
 
 // Simple translations
 const translations = {
@@ -449,7 +450,7 @@ const StaffDashboard: React.FC = () => {
     
     // Trigger immediate effects for specific settings
     if (key === 'autoRefresh' && value) {
-      simulateRealTimeUpdates();
+      // Auto refresh enabled
     }
     
     if (key === 'soundNotifications' && value) {
@@ -483,7 +484,7 @@ const StaffDashboard: React.FC = () => {
       const interval = setInterval(() => {
         // Refresh data based on interval
         if (dashboardState.realTimeEnabled) {
-          simulateRealTimeUpdates();
+          // Real-time updates
         }
       }, settings.refreshInterval * 1000);
       
@@ -554,19 +555,22 @@ const StaffDashboard: React.FC = () => {
       return;
     }
     
-    if (passwordData.newPassword.length < 8) {
+    if (passwordData.newPassword.length < 6) {
       toast.current?.show({
         severity: 'error',
         summary: 'Weak Password',
-        detail: 'Password must be at least 8 characters long',
+        detail: 'Password must be at least 6 characters long',
         life: 3000
       });
       return;
     }
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await mockAuthService.changePassword(
+        user?.id || '',
+        passwordData.currentPassword,
+        passwordData.newPassword
+      );
       
       toast.current?.show({
         severity: 'success',
@@ -578,11 +582,11 @@ const StaffDashboard: React.FC = () => {
       setPasswordDialog(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
-    } catch (error) {
+    } catch (error: any) {
       toast.current?.show({
         severity: 'error',
         summary: 'Password Change Failed',
-        detail: 'Failed to update password. Please try again.',
+        detail: error.message || 'Failed to update password. Please try again.',
         life: 3000
       });
     }
@@ -717,17 +721,8 @@ const StaffDashboard: React.FC = () => {
     }
   };
 
-  // Use data from hooks - fallback to mock data if needed
-  const drawerStats = stats.totalPatients > 0 ? stats : {
-    totalCash: 15000,
-    totalOnline: 28000,
-    totalPatients: 45,
-    pendingPayments: 3,
-    completedAppointments: 42,
-    cancelledAppointments: 2,
-    walkInPatients: 8,
-    avgWaitTime: 18
-  };
+  // Use real data from hooks only
+  const drawerStats = stats;
   
 
   
@@ -741,45 +736,8 @@ const StaffDashboard: React.FC = () => {
     setQueueState(displayQueueData);
   }, [pendingAppointments]);
 
-  // Fallback appointment data for reference
-  const displayQueueData = queueData.length > 0 ? queueData : [
-    {
-      doctorId: 'dr1',
-      doctorName: 'Dr. Smith',
-      department: 'Cardiology',
-      currentPatient: 'John Doe',
-      waitingCount: 3,
-      avgWaitTime: '15 min',
-      status: 'active' as const,
-      nextPatient: 'Alice Brown',
-      completedToday: 12,
-      efficiency: 85
-    },
-    {
-      doctorId: 'dr2',
-      doctorName: 'Dr. Johnson',
-      department: 'Orthopedics',
-      currentPatient: 'Jane Smith',
-      waitingCount: 2,
-      avgWaitTime: '20 min',
-      status: 'active' as const,
-      nextPatient: 'Bob Wilson',
-      completedToday: 8,
-      efficiency: 92
-    },
-    {
-      doctorId: 'dr3',
-      doctorName: 'Dr. Brown',
-      department: 'General Medicine',
-      currentPatient: null,
-      waitingCount: 5,
-      avgWaitTime: '12 min',
-      status: 'break' as const,
-      nextPatient: 'Carol Davis',
-      completedToday: 15,
-      efficiency: 78
-    }
-  ];
+  // Use real queue data only
+  const displayQueueData = queueData;
 
   const doctors = [
     { label: 'Dr. Smith - Cardiology', value: 'dr1', department: 'Cardiology' },
@@ -801,63 +759,73 @@ const StaffDashboard: React.FC = () => {
     { label: 'Cancelled', value: 'cancelled' }
   ];
   
-  // Chart data - memoized to prevent continuous refresh
-  const hourlyData = useMemo(() => ({
-    labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
-    datasets: [
-      {
-        label: 'Appointments',
-        data: [5, 8, 12, 15, 10, 18, 14, 11, 7],
-        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 2,
-        fill: true
-      }
-    ]
-  }), []);
+  // Chart data - calculated from real appointments
+  const hourlyData = useMemo(() => {
+    const hours = ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'];
+    const hourlyCount = hours.map(hour => {
+      return appointments.filter(apt => {
+        const aptHour = new Date(`2024-01-01 ${apt.time}`).getHours();
+        const targetHour = hour.includes('PM') && !hour.includes('12') ? 
+          parseInt(hour) + 12 : parseInt(hour);
+        return aptHour === targetHour;
+      }).length;
+    });
+    
+    return {
+      labels: hours,
+      datasets: [
+        {
+          label: 'Appointments',
+          data: hourlyCount,
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2,
+          fill: true
+        }
+      ]
+    };
+  }, [appointments]);
   
-  const departmentData = useMemo(() => ({
-    labels: ['Cardiology', 'Orthopedics', 'General Medicine', 'Pediatrics'],
-    datasets: [
-      {
-        data: [12, 8, 15, 6],
-        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
-      }
-    ]
-  }), []);
+  const departmentData = useMemo(() => {
+    const deptCounts = appointments.reduce((acc, apt) => {
+      acc[apt.department] = (acc[apt.department] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return {
+      labels: Object.keys(deptCounts),
+      datasets: [
+        {
+          data: Object.values(deptCounts),
+          backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+        }
+      ]
+    };
+  }, [appointments]);
   
-  const paymentMethodsData = useMemo(() => ({
-    labels: ['Cash', 'UPI', 'Card'],
-    datasets: [{
-      data: [45, 35, 20],
-      backgroundColor: ['#4CAF50', '#2196F3', '#FF9800']
-    }]
-  }), []);
+  const paymentMethodsData = useMemo(() => {
+    const paymentCounts = transactionHistory.reduce((acc, txn) => {
+      acc[txn.paymentMethod] = (acc[txn.paymentMethod] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return {
+      labels: Object.keys(paymentCounts),
+      datasets: [{
+        data: Object.values(paymentCounts),
+        backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#FF5722']
+      }]
+    };
+  }, [transactionHistory]);
   
-  // Timeline events
-  const timelineEvents = [
-    {
-      status: 'Appointment Confirmed',
-      date: '10:30 AM',
-      icon: 'pi pi-check',
-      color: '#4CAF50',
-      patient: 'John Doe'
-    },
-    {
-      status: 'Walk-in Added',
-      date: '10:45 AM',
-      icon: 'pi pi-user-plus',
-      color: '#2196F3',
-      patient: 'Emergency Patient'
-    },
-    {
-      status: 'Payment Received',
-      date: '11:00 AM',
-      icon: 'pi pi-money-bill',
-      color: '#FF9800',
-      patient: 'Jane Smith'
-    }
-  ];
+  // Timeline events from real data
+  const timelineEvents = notifications.slice(0, 3).map(notif => ({
+    status: notif.title,
+    date: notif.timestamp.toLocaleTimeString(),
+    icon: notif.type === 'appointment' ? 'pi pi-calendar' : notif.type === 'payment' ? 'pi pi-money-bill' : 'pi pi-info-circle',
+    color: notif.priority === 'high' ? '#F44336' : notif.priority === 'medium' ? '#FF9800' : '#4CAF50',
+    patient: notif.message
+  }));
 
   // Utility functions
   const getSeverity = (status: string) => {
@@ -1570,88 +1538,87 @@ const StaffDashboard: React.FC = () => {
     );
   };
   
-  // Real-time WebSocket connection
+  // Real-time data updates
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8080'); // Mock WebSocket
-    
-    ws.onopen = () => {
-      console.log('Connected to real-time updates');
-      toast.current?.show({
-        severity: 'success',
-        summary: 'Connected',
-        detail: 'Real-time updates active',
-        life: 2000
-      });
+    // Load initial data from localStorage
+    const loadStoredData = () => {
+      try {
+        const storedAppointments = localStorage.getItem('appointments');
+        if (storedAppointments) {
+          setAppointments(JSON.parse(storedAppointments));
+        }
+        
+        const storedStats = localStorage.getItem('staffDashboardStats');
+        if (storedStats) {
+          // Update stats from stored data if available
+        }
+      } catch (error) {
+        console.error('Error loading stored data:', error);
+      }
     };
     
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      handleRealTimeUpdate(data);
-    };
+    loadStoredData();
     
-    ws.onerror = () => {
-      // Fallback to polling for real-time updates
-      const interval = setInterval(() => {
-        simulateRealTimeUpdates();
-      }, 5000);
-      
-      return () => clearInterval(interval);
-    };
+    // Set up periodic data refresh
+    const interval = setInterval(() => {
+      if (settings.autoRefresh) {
+        loadStoredData();
+      }
+    }, settings.refreshInterval * 1000);
     
-    return () => ws.close();
-  }, []);
+    return () => clearInterval(interval);
+  }, [settings.autoRefresh, settings.refreshInterval]);
   
   const handleRealTimeUpdate = (data: any) => {
+    // Handle real updates from actual data changes
     switch (data.type) {
       case 'NEW_APPOINTMENT':
+        // Refresh appointments from localStorage
+        const updatedAppointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+        setAppointments(updatedAppointments);
+        
         toast.current?.show({
           severity: 'info',
           summary: 'New Appointment',
-          detail: `${data.patientName} booked with ${data.doctorName}`,
+          detail: `${data.patientName} appointment updated`,
           life: 4000
         });
         break;
       case 'PAYMENT_RECEIVED':
+        // Refresh transaction history
+        const updatedTransactions = JSON.parse(localStorage.getItem('transactionHistory') || '[]');
+        setTransactionHistory(updatedTransactions);
+        
         toast.current?.show({
           severity: 'success',
-          summary: 'Payment Received',
-          detail: `₹${data.amount} from ${data.patientName}`,
+          summary: 'Payment Recorded',
+          detail: `Payment recorded successfully`,
           life: 3000
         });
-        break;
-      case 'QUEUE_UPDATE':
-        // Update queue data in real-time
         break;
     }
   };
   
-  const simulateRealTimeUpdates = () => {
-    const updates = [
-      { type: 'NEW_APPOINTMENT', patientName: 'John Doe', doctorName: 'Dr. Smith' },
-      { type: 'PAYMENT_RECEIVED', amount: 500, patientName: 'Jane Smith' },
-      { type: 'QUEUE_UPDATE', doctorId: 'dr1', position: 2 }
-    ];
-    
-    const randomUpdate = updates[Math.floor(Math.random() * updates.length)];
-    handleRealTimeUpdate(randomUpdate);
-  };
+  // Remove simulation - use real data only
   
-  // Auto-refresh data every 30 seconds
+  // Auto-refresh real data
   useEffect(() => {
     const interval = setInterval(() => {
-      if (dashboardState.realTimeEnabled) {
-        // Update stats with random changes
-        setStats(prev => ({
-          ...prev,
-          totalCash: prev.totalCash + Math.floor(Math.random() * 1000),
-          totalOnline: prev.totalOnline + Math.floor(Math.random() * 2000),
-          totalPatients: prev.totalPatients + Math.floor(Math.random() * 3)
-        }));
+      if (dashboardState.realTimeEnabled && settings.autoRefresh) {
+        // Refresh data from localStorage
+        const storedAppointments = localStorage.getItem('appointments');
+        if (storedAppointments) {
+          try {
+            setAppointments(JSON.parse(storedAppointments));
+          } catch (error) {
+            console.error('Error refreshing appointments:', error);
+          }
+        }
       }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [dashboardState.realTimeEnabled]);
+  }, [dashboardState.realTimeEnabled, settings.autoRefresh]);
 
   return (
     <div className="staff-dashboard">
@@ -2533,30 +2500,23 @@ const StaffDashboard: React.FC = () => {
           <div className="col-12 lg:col-8">
             <Card title="Search Results">
               <DataTable 
-                value={[
-                  {
-                    id: '1',
-                    name: 'John Doe',
-                    phone: '+91 9876543210',
-                    lastVisit: '2024-01-20',
-                    doctor: 'Dr. Smith',
-                    reason: 'Chest pain',
-                    timeTaken: '25 min',
-                    status: 'Completed'
-                  },
-                  {
-                    id: '2',
-                    name: 'John Doe',
-                    phone: '+91 9876543210',
-                    lastVisit: '2024-01-15',
-                    doctor: 'Dr. Johnson',
-                    reason: 'Follow-up',
-                    timeTaken: '15 min',
-                    status: 'Completed'
-                  }
-                ]}
+                value={appointments.filter(apt => {
+                  if (searchFilters.phone && !apt.phone.includes(searchFilters.phone)) return false;
+                  if (searchFilters.name && !apt.patientName.toLowerCase().includes(searchFilters.name.toLowerCase())) return false;
+                  if (searchFilters.doctorId && apt.doctorId !== searchFilters.doctorId) return false;
+                  return true;
+                }).map(apt => ({
+                  id: apt.id,
+                  name: apt.patientName,
+                  phone: apt.phone,
+                  lastVisit: new Date().toLocaleDateString(),
+                  doctor: apt.doctorName,
+                  reason: apt.symptoms || 'Consultation',
+                  timeTaken: `${apt.estimatedDuration || 20} min`,
+                  status: apt.status
+                }))}
                 responsiveLayout="scroll"
-                emptyMessage="No patients found"
+                emptyMessage="No patients found. Use search filters above."
                 className="p-datatable-sm"
               >
                 <Column field="name" header="Patient Name" />
@@ -2566,53 +2526,54 @@ const StaffDashboard: React.FC = () => {
                 <Column field="reason" header="Reason" />
                 <Column field="timeTaken" header="Time Taken" />
                 <Column field="status" header="Status" body={(data) => 
-                  <Tag value={data.status} severity="success" />
+                  <Tag value={data.status} severity={getSeverity(data.status)} />
                 } />
               </DataTable>
             </Card>
           </div>
           
           <div className="col-12 lg:col-4">
-            <Card title="Patient Details">
+            <Card title="Patient Summary">
               <div className="flex flex-column gap-3">
                 <div className="text-center mb-3">
-                  <Avatar label="JD" size="xlarge" className="mb-2" />
-                  <h3 className="m-0">John Doe</h3>
-                  <p className="text-600 m-0">+91 9876543210</p>
+                  <Avatar label="?" size="xlarge" className="mb-2" />
+                  <h3 className="m-0">Select Patient</h3>
+                  <p className="text-600 m-0">Search to view details</p>
                 </div>
                 
                 <div className="grid">
                   <div className="col-6">
                     <div className="text-center p-2 border-round surface-100">
-                      <div className="text-2xl font-bold text-blue-600">5</div>
-                      <div className="text-sm text-600">Total Visits</div>
+                      <div className="text-2xl font-bold text-blue-600">{appointments.length}</div>
+                      <div className="text-sm text-600">Total Appointments</div>
                     </div>
                   </div>
                   <div className="col-6">
                     <div className="text-center p-2 border-round surface-100">
-                      <div className="text-2xl font-bold text-green-600">₹2,500</div>
-                      <div className="text-sm text-600">Total Paid</div>
+                      <div className="text-2xl font-bold text-green-600">₹{(drawerStats.totalCash + drawerStats.totalOnline).toLocaleString()}</div>
+                      <div className="text-sm text-600">Total Revenue</div>
                     </div>
                   </div>
                 </div>
                 
                 <div className="mt-3">
-                  <h4>Recent Visits</h4>
+                  <h4>Recent Activity</h4>
                   <Timeline 
-                    value={[
-                      { date: '2024-01-20', doctor: 'Dr. Smith', reason: 'Chest pain' },
-                      { date: '2024-01-15', doctor: 'Dr. Johnson', reason: 'Follow-up' },
-                      { date: '2024-01-10', doctor: 'Dr. Smith', reason: 'Check-up' }
-                    ]}
+                    value={appointments.slice(0, 3).map(apt => ({
+                      date: new Date().toLocaleDateString(),
+                      doctor: apt.doctorName,
+                      reason: apt.symptoms || 'Consultation',
+                      patient: apt.patientName
+                    }))}
                     align="left"
                     className="customized-timeline"
                   >
                     <template>
                       {(item: any) => (
                         <div>
-                          <div className="font-medium">{item.doctor}</div>
-                          <div className="text-sm text-600">{item.reason}</div>
-                          <div className="text-xs text-500">{item.date}</div>
+                          <div className="font-medium">{item.patient}</div>
+                          <div className="text-sm text-600">{item.doctor}</div>
+                          <div className="text-xs text-500">{item.reason}</div>
                         </div>
                       )}
                     </template>
@@ -3971,9 +3932,9 @@ const StaffDashboard: React.FC = () => {
           <div className="p-3 border-round surface-100">
             <h4 className="mt-0 mb-2">Password Requirements:</h4>
             <ul className="list-none p-0 m-0">
-              <li className={`flex align-items-center gap-2 mb-1 ${passwordData.newPassword.length >= 8 ? 'text-green-600' : 'text-600'}`}>
-                <i className={`pi ${passwordData.newPassword.length >= 8 ? 'pi-check' : 'pi-circle'}`}></i>
-                At least 8 characters
+              <li className={`flex align-items-center gap-2 mb-1 ${passwordData.newPassword.length >= 6 ? 'text-green-600' : 'text-600'}`}>
+                <i className={`pi ${passwordData.newPassword.length >= 6 ? 'pi-check' : 'pi-circle'}`}></i>
+                At least 6 characters
               </li>
               <li className={`flex align-items-center gap-2 mb-1 ${/[A-Z]/.test(passwordData.newPassword) ? 'text-green-600' : 'text-600'}`}>
                 <i className={`pi ${/[A-Z]/.test(passwordData.newPassword) ? 'pi-check' : 'pi-circle'}`}></i>

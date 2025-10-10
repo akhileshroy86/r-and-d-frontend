@@ -17,14 +17,12 @@
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: #1f2937;
+  background: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom styles for healthcare theme */
@@ -35,6 +33,72 @@ body {
 .layout-main {
   background-color: #f8f9fa;
   min-height: calc(100vh - 60px);
+}
+
+/* Professional text styling - Enhanced for production readiness */
+h1, h2, h3, h4, h5, h6 {
+  color: #111827;
+  font-weight: 600;
+}
+
+p {
+  color: #1f2937;
+}
+
+/* Landing page text improvements */
+.landing-section p {
+  color: #1f2937 !important;
+}
+
+.landing-section .feature-description {
+  color: #1f2937 !important;
+}
+
+.landing-section .testimonial-text {
+  color: #111827 !important;
+}
+
+.landing-section .benefit-description {
+  color: #1f2937 !important;
+}
+
+/* Ensure all content text has proper contrast */
+.content-text {
+  color: #1f2937 !important;
+}
+
+/* Make sure secondary text is still readable */
+.text-secondary {
+  color: #374151 !important;
+}
+
+/* Override any light gray text */
+.text-gray-500 {
+  color: #374151 !important;
+}
+
+.text-gray-600 {
+  color: #1f2937 !important;
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
 }
 
 /* PrimeReact customizations */

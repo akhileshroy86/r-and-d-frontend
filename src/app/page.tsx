@@ -2,21 +2,36 @@
 
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useRouter } from 'next/navigation';
-import { RootState } from '../store';
+import HeroSection from '../components/landing/HeroSection';
+import FeaturesSection from '../components/landing/FeaturesSection';
+import PlatformScreensSection from '../components/landing/PlatformScreensSection';
+import BenefitsSection from '../components/landing/BenefitsSection';
+import TestimonialsSection from '../components/landing/TestimonialsSection';
+import PricingSection from '../components/landing/PricingSection';
+import SecuritySection from '../components/landing/SecuritySection';
+import EnterpriseSecuritySection from '../components/landing/EnterpriseSecuritySection';
+import IntegrationsSection from '../components/landing/IntegrationsSection';
+import ApiArchitectureSection from '../components/landing/ApiArchitectureSection';
+import CtaSection from '../components/landing/CtaSection';
+import FooterSection from '../components/landing/FooterSection';
+import LoginSection from '../components/landing/LoginSection';
+import LoginModal from '../components/auth/LoginModal';
+import AdminAuthModal from '../components/auth/AdminAuthModal';
+import { useAdminAuth } from '../hooks/custom/useAdminAuth';
 import HomePage from '../components/patient/HomePage';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import DoctorDashboard from '../components/doctor/DoctorDashboard';
 import StaffDashboard from '../components/staff/StaffDashboard';
-import LoginModal from '../components/auth/LoginModal';
-import AdminAuthModal from '../components/auth/AdminAuthModal';
-import { useAdminAuth } from '../hooks/custom/useAdminAuth';
-import { Card } from 'primereact/card';
-import { Button } from 'primereact/button';
+
+interface RootState {
+  auth: {
+    user: any;
+    isAuthenticated: boolean;
+  };
+}
 
 export default function Home() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const router = useRouter();
   const { loading: adminLoading } = useAdminAuth();
   const [mounted, setMounted] = useState(false);
 
@@ -56,61 +71,40 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <>
-        <div className="min-h-screen flex align-items-center justify-content-center bg-gray-50">
-          <Card className="w-full max-w-md shadow-3">
-            <div className="text-center">
-              <div className="mb-4">
-                <i className="pi pi-heart text-6xl text-primary mb-3"></i>
-                <h1 className="text-3xl font-bold text-primary mb-2">
-                  Healthcare Management
-                </h1>
-                <p className="text-600 text-lg">
-                  Complete healthcare solution for patients, doctors & staff
-                </p>
-              </div>
-              
-              <div className="flex flex-column gap-3 mt-5">
-                <Button 
-                  label="Patient Login" 
-                  icon="pi pi-user" 
-                  className="w-full p-3 text-lg"
-                  onClick={() => openLoginModal('patient')}
-                />
-                <Button 
-                  label="Doctor Login" 
-                  icon="pi pi-user-edit" 
-                  className="w-full p-3 text-lg"
-                  severity="secondary"
-                  outlined
-                  onClick={() => openLoginModal('doctor')}
-                />
-                <Button 
-                  label="Staff Login" 
-                  icon="pi pi-users" 
-                  className="w-full p-3 text-lg"
-                  severity="info"
-                  outlined
-                  onClick={() => openLoginModal('staff')}
-                />
-                <Button 
-                  label="Admin Login" 
-                  icon="pi pi-cog" 
-                  className="w-full p-3 text-lg"
-                  severity="danger"
-                  outlined
-                  onClick={() => openLoginModal('admin')}
-                />
-              </div>
-              
-              <div className="mt-5 pt-4 border-top-1 surface-border">
-                <p className="text-sm text-500">
-                  Multi-language support • Voice symptoms • Queue management
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+      <div style={{ 
+        width: '100vw', 
+        minHeight: '100vh',
+        margin: 0,
+        padding: 0,
+        overflowX: 'hidden',
+        position: 'relative'
+      }}>
+        <style jsx global>{`
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+          }
+        `}</style>
+        <HeroSection onOpenLoginModal={openLoginModal} />
+        <FeaturesSection onOpenLoginModal={openLoginModal} />
+        <PlatformScreensSection />
+        <BenefitsSection />
+        <TestimonialsSection />
+        <PricingSection />
+        <SecuritySection />
+        <EnterpriseSecuritySection />
+        <IntegrationsSection />
+        <ApiArchitectureSection />
+        <CtaSection />
+        <FooterSection />
+        <LoginSection onOpenLoginModal={openLoginModal} />
         
         <LoginModal
           visible={loginModal.visible}
@@ -122,7 +116,7 @@ export default function Home() {
           visible={adminAuthModal}
           onHide={() => setAdminAuthModal(false)}
         />
-      </>
+      </div>
     );
   }
 

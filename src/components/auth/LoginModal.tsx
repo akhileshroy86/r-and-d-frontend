@@ -122,103 +122,135 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
   };
 
   const renderPatientAuth = () => (
-    <div className="flex flex-column gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {isSignup && (
-        <div className="field">
-          <label className="block text-900 font-medium mb-2">Full Name</label>
+        <div>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Full Name</label>
           <InputText
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
-            placeholder="Enter your name"
-            className="w-full"
+            placeholder="Enter your full name"
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
           />
         </div>
       )}
       
-      <div className="field">
-        <label className="block text-900 font-medium mb-2">Email</label>
+      <div>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Email Address</label>
         <InputText
           value={formData.email}
           onChange={(e) => handleInputChange('email', e.target.value)}
-          placeholder="Enter email"
-          className="w-full"
+          placeholder="Enter your email"
           type="email"
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
         />
       </div>
       
-      <div className="field">
-        <label className="block text-900 font-medium mb-2">Password</label>
+      <div>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Password</label>
         <Password
           value={formData.password}
           onChange={(e) => handleInputChange('password', e.target.value)}
-          placeholder="Enter password"
-          className="w-full"
+          placeholder="Enter your password"
           feedback={isSignup}
           toggleMask
+          style={{ width: '100%' }}
+          inputStyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', width: '100%' }}
         />
       </div>
       
       {isSignup && (
-        <div className="field">
-          <label className="block text-900 font-medium mb-2">Confirm Password</label>
+        <div>
+          <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Confirm Password</label>
           <Password
             value={formData.confirmPassword}
             onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-            placeholder="Confirm password"
-            className="w-full"
+            placeholder="Confirm your password"
             feedback={false}
             toggleMask
+            style={{ width: '100%' }}
+            inputStyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', width: '100%' }}
           />
         </div>
       )}
       
       <Button
-        label={isSignup ? "Sign Up" : "Login"}
+        label={isSignup ? "Create Account" : "Sign In"}
         onClick={handleSubmit}
         loading={loading}
-        className="w-full"
+        style={{
+          width: '100%',
+          padding: '12px',
+          backgroundColor: '#3b82f6',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '16px',
+          fontWeight: '600',
+          marginTop: '8px'
+        }}
       />
       
-      <div className="text-center">
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <span style={{ fontSize: '14px', color: '#6b7280' }}>
+          {isSignup ? "Already have an account?" : "Don't have an account?"}
+        </span>
         <Button
-          label={isSignup ? "Already have an account? Login" : "Don't have an account? Sign Up"}
+          label={isSignup ? " Sign In" : " Sign Up"}
           link
           onClick={() => setIsSignup(!isSignup)}
+          style={{ fontSize: '14px', fontWeight: '600', color: '#3b82f6', padding: '0 4px' }}
         />
       </div>
     </div>
   );
 
   const renderStaffLogin = () => (
-    <div className="flex flex-column gap-4">
-      <div className="field">
-        <label className="block text-900 font-medium mb-2">Email</label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Email Address</label>
         <InputText
           value={formData.email}
           onChange={(e) => handleInputChange('email', e.target.value)}
-          placeholder="Enter email"
-          className="w-full"
+          placeholder="Enter your email"
+          type="email"
+          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
         />
       </div>
       
-      <div className="field">
-        <label className="block text-900 font-medium mb-2">Password</label>
+      <div>
+        <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Password</label>
         <Password
           value={formData.password}
           onChange={(e) => handleInputChange('password', e.target.value)}
-          placeholder="Enter password"
-          className="w-full"
+          placeholder="Enter your password"
           feedback={false}
           toggleMask
+          style={{ width: '100%' }}
+          inputStyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', width: '100%' }}
         />
       </div>
       
       <Button
-        label="Login"
+        label="Sign In"
         onClick={handleSubmit}
         loading={loading}
-        className="w-full"
+        style={{
+          width: '100%',
+          padding: '12px',
+          backgroundColor: '#3b82f6',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '16px',
+          fontWeight: '600',
+          marginTop: '8px'
+        }}
       />
+      
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <a href="#" style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none' }}>
+          Forgot your password?
+        </a>
+      </div>
     </div>
   );
 
@@ -260,9 +292,31 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
       <Toast ref={toast} />
       <Dialog
         header={
-          <div className="flex align-items-center gap-2">
-            <i className={getIcon()}></i>
-            <span>{getTitle()}</span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '8px 0'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              backgroundColor: '#3b82f6',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <i className={getIcon()} style={{ color: 'white', fontSize: '18px' }}></i>
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                {getTitle()}
+              </h3>
+              <p style={{ margin: 0, fontSize: '14px', color: 'white' }}>
+                Welcome back! Please sign in to continue
+              </p>
+            </div>
           </div>
         }
         visible={visible}
@@ -270,10 +324,26 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
           onHide();
           resetForm();
         }}
-        style={{ width: '400px' }}
+        style={{ 
+          width: '450px',
+          borderRadius: '16px'
+        }}
+        contentStyle={{
+          borderRadius: '0 0 16px 16px',
+          padding: '0'
+        }}
+        headerStyle={{
+          borderRadius: '16px 16px 0 0',
+          backgroundColor: '#f8fafc',
+          border: 'none',
+          padding: '24px',
+          borderBottom: '1px solid #e2e8f0'
+        }}
         modal
+        draggable={false}
+        resizable={false}
       >
-        <div className="p-4">
+        <div style={{ padding: '24px' }}>
           {getLoginContent()}
         </div>
       </Dialog>

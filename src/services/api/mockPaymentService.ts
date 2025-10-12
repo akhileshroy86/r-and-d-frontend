@@ -2,34 +2,41 @@ import { Payment } from '../../types/models';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Mock payments database
-let mockPayments: Payment[] = [
-  {
-    id: '1',
-    bookingId: '1',
-    amount: 500,
-    status: 'completed',
-    method: 'cash',
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-01-15T10:30:00Z'
+// Get payments from localStorage or initialize with default
+const getStoredPayments = (): Payment[] => {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem('mockPayments');
+  return stored ? JSON.parse(stored) : [];
+};
+
+// Save payments to localStorage
+const savePayments = (payments: Payment[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('mockPayments', JSON.stringify(payments));
   }
-];
+};
+
+let mockPayments: Payment[] = getStoredPayments();
 
 export const mockPaymentService = {
   createPaymentOrder: async (paymentData: { bookingId: string; amount: number }): Promise<Payment> => {
     await delay(500);
     
     const payment: Payment = {
-      id: String(mockPayments.length + 1),
+      id: String(Date.now()),
       bookingId: paymentData.bookingId,
       amount: paymentData.amount,
-      status: 'pending',
+      status: 'completed',
       method: 'online',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     
+    mockPayments = getStoredPayments();
     mockPayments.push(payment);
+    savePayments(mockPayments);
+    console.log('Payment created and saved to localStorage:', payment);
+    console.log('All payments in localStorage:', getStoredPayments());
     return payment;
   },
 
@@ -72,7 +79,7 @@ export const mockPaymentService = {
     await delay(500);
     
     const payment: Payment = {
-      id: String(mockPayments.length + 1),
+      id: String(Date.now()),
       bookingId: paymentData.bookingId,
       amount: paymentData.amount,
       status: 'completed',
@@ -81,7 +88,15 @@ export const mockPaymentService = {
       updatedAt: new Date().toISOString()
     };
     
+    mockPayments = getStoredPayments();
     mockPayments.push(payment);
+    savePayments(mockPayments);
     return payment;
+  },
+
+  // Add method to get all payments for admin dashboard
+  getAllPayments: async (): Promise<Payment[]> => {
+    await delay(300);
+    return getStoredPayments();
   }
 };

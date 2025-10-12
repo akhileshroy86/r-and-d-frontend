@@ -16,37 +16,13 @@ interface AuthState {
   loading: boolean;
 }
 
-// Load initial state from localStorage
-const loadInitialState = (): AuthState => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData);
-        return {
-          user,
-          token,
-          isAuthenticated: true,
-          loading: false,
-        };
-      } catch (error) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
-  }
-  
-  return {
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    loading: false,
-  };
+// Initial state - always start empty to prevent hydration issues
+const initialState: AuthState = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  loading: false,
 };
-
-const initialState: AuthState = loadInitialState();
 
 const authSlice = createSlice({
   name: 'auth',

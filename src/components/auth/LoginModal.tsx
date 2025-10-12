@@ -84,6 +84,10 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
         response = await authService.login({ email: formData.email, password: formData.password });
       }
 
+      // Debug: Log the response
+      console.log('Login response:', response);
+      console.log('User role:', response.user.role);
+      
       // Store token in localStorage
       if (response.token) {
         localStorage.setItem('token', response.token);
@@ -97,16 +101,11 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
       onHide();
       resetForm();
       
-      // Navigate to appropriate dashboard
-      const roleRoutes = {
-        admin: '/admin',
-        doctor: '/doctor',
-        staff: '/staff',
-        patient: '/'
-      };
+      // Store user in localStorage for persistence
+      localStorage.setItem('user', JSON.stringify(response.user));
       
-      const targetRoute = roleRoutes[response.user.role as keyof typeof roleRoutes] || '/';
-      router.push(targetRoute);
+      // Don't navigate - let the main page handle routing based on user role
+      // The main page will automatically show the correct dashboard
       
       toast.current?.show({ 
         severity: 'success', 

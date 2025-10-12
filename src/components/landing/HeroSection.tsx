@@ -9,12 +9,10 @@ interface HeroSectionProps {
 export default function HeroSection({ onOpenLoginModal }: HeroSectionProps) {
   const { language, setLanguage, t } = useLanguage();
   
-  const getLanguageDisplay = (lang: string) => {
-    switch(lang) {
-      case 'en': return 'English';
-      case 'hi': return 'हिंदी';
-      case 'te': return 'తెలుగు';
-      default: return 'English';
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -60,11 +58,10 @@ export default function HeroSection({ onOpenLoginModal }: HeroSectionProps) {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
             <div style={{ display: 'flex', gap: '30px' }}>
-              <a href="#" style={{ color: '#1f2937', textDecoration: 'none', fontWeight: '600' }}>Features</a>
-              <a href="#" style={{ color: '#1f2937', textDecoration: 'none', fontWeight: '600' }}>How it works</a>
-              <a href="#" style={{ color: '#1f2937', textDecoration: 'none', fontWeight: '600' }}>Screens</a>
-              <a href="#" style={{ color: '#1f2937', textDecoration: 'none', fontWeight: '600' }}>Pricing</a>
-              <a href="#" style={{ color: '#1f2937', textDecoration: 'none', fontWeight: '600' }}>Contact</a>
+              <button onClick={() => scrollToSection('features')} style={{ color: '#1f2937', background: 'none', border: 'none', fontWeight: '600', cursor: 'pointer' }}>Features</button>
+              <button onClick={() => scrollToSection('screens')} style={{ color: '#1f2937', background: 'none', border: 'none', fontWeight: '600', cursor: 'pointer' }}>Screens</button>
+              <button onClick={() => scrollToSection('pricing')} style={{ color: '#1f2937', background: 'none', border: 'none', fontWeight: '600', cursor: 'pointer' }}>Pricing</button>
+              <button onClick={() => scrollToSection('contact')} style={{ color: '#1f2937', background: 'none', border: 'none', fontWeight: '600', cursor: 'pointer' }}>Contact</button>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -98,18 +95,21 @@ export default function HeroSection({ onOpenLoginModal }: HeroSectionProps) {
                 {t('login')}
               </button>
               
-              <button style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '16px',
-                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
-                transition: 'all 0.3s ease'
-              }}>
+              <button 
+                onClick={() => onOpenLoginModal('admin')}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
                 Get Started
               </button>
             </div>

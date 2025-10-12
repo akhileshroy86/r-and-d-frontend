@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Avatar } from 'primereact/avatar';
@@ -16,6 +16,25 @@ const AdminHeader: React.FC = () => {
   const { signOut } = useAdminAuth();
   const { user } = useSelector((state: RootState) => state.auth);
   const menuRef = useRef<Menu>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="bg-white border-bottom-1 surface-border px-4 py-2" suppressHydrationWarning>
+        <div className="flex justify-content-between align-items-center">
+          <div className="bg-blue-500 text-white p-2 border-round">
+            <i className="pi pi-building text-xl"></i>
+          </div>
+          <div className="text-xl font-bold text-900">Health</div>
+          <div>Loading...</div>
+        </div>
+      </div>
+    );
+  }
   
   const campusOptions = [
     { label: 'Main Campus', value: 'main' },
@@ -129,37 +148,37 @@ const AdminHeader: React.FC = () => {
       </div>
 
       {/* Blue Header Section */}
-      <div className="bg-blue-500 text-white px-4 py-4">
-        <div className="flex justify-content-between align-items-center">
+      <div className="text-white px-4 py-4" style={{ background: 'linear-gradient(to right, #1e40af, #2563eb)' }}>
+        <div className="flex flex-column lg:flex-row justify-content-between align-items-start lg:align-items-center gap-3">
           {/* Left Side - Greeting */}
-          <div>
-            <h2 className="text-white m-0 mb-1">Good morning, {user?.name || 'Admin'} 👋</h2>
-            <p className="text-blue-100 m-0">Here's today's snapshot for Apollo Medical Center.</p>
+          <div className="flex-1">
+            <h2 className="text-white m-0 mb-1 text-xl lg:text-2xl">Good morning, {user?.name || 'Admin'} 👋</h2>
+            <p className="text-blue-100 m-0 text-sm lg:text-base">Here's today's snapshot for Apollo Medical Center.</p>
           </div>
 
           {/* Right Side - Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <Button
               label="Add Appointment"
               icon="pi pi-plus"
-              className="bg-white text-blue-500 border-white"
+              className="bg-white text-blue-500 border-white p-button-sm lg:p-button-normal flex-1 lg:flex-none"
               outlined
             />
             <Button
               label="Open Queues"
               icon="pi pi-list"
-              className="bg-blue-600 text-white border-blue-600"
+              className="bg-blue-600 text-white border-blue-600 p-button-sm lg:p-button-normal flex-1 lg:flex-none"
             />
             <Button
               label="Add Doctor"
               icon="pi pi-user-plus"
-              className="bg-blue-600 text-white border-blue-600"
+              className="bg-blue-600 text-white border-blue-600 p-button-sm lg:p-button-normal flex-1 lg:flex-none"
               onClick={handleAddDoctor}
             />
             <Button
               label="Add Staff"
               icon="pi pi-users"
-              className="bg-blue-600 text-white border-blue-600"
+              className="bg-blue-600 text-white border-blue-600 p-button-sm lg:p-button-normal flex-1 lg:flex-none"
               onClick={handleAddStaff}
             />
           </div>

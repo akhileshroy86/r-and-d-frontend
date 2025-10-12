@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
+import ClientOnly from '../components/common/ClientOnly';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import HeroSection from '../components/landing/HeroSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
 import PlatformScreensSection from '../components/landing/PlatformScreensSection';
@@ -14,11 +16,11 @@ import IntegrationsSection from '../components/landing/IntegrationsSection';
 import ApiArchitectureSection from '../components/landing/ApiArchitectureSection';
 import CtaSection from '../components/landing/CtaSection';
 import FooterSection from '../components/landing/FooterSection';
-import LoginSection from '../components/landing/LoginSection';
+
 import LoginModal from '../components/auth/LoginModal';
 import AdminAuthModal from '../components/auth/AdminAuthModal';
 import { useAdminAuth } from '../hooks/custom/useAdminAuth';
-import HomePage from '../components/patient/HomePage';
+import PatientDashboard from '../components/patient/PatientDashboard';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import DoctorDashboard from '../components/doctor/DoctorDashboard';
 import StaffDashboard from '../components/staff/StaffDashboard';
@@ -30,45 +32,35 @@ interface RootState {
   };
 }
 
-export default function Home() {
+function HomeContent() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { loading: adminLoading } = useAdminAuth();
-  const [mounted, setMounted] = useState(false);
+  
+  // Debug: Check localStorage directly
+  if (typeof window !== 'undefined') {
+    const storedUser = localStorage.getItem('user');
+    console.log('Stored user in localStorage:', storedUser);
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log('Parsed stored user:', parsedUser);
+      } catch (e) {
+        console.error('Error parsing stored user:', e);
+      }
+    }
+  }
   const [loginModal, setLoginModal] = useState<{
     visible: boolean;
     userType: 'patient' | 'doctor' | 'staff' | 'admin';
   }>({ visible: false, userType: 'patient' });
   const [adminAuthModal, setAdminAuthModal] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Clear any existing auth data on page load to always show login selection
-  useEffect(() => {
-    if (mounted) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
-  }, [mounted]);
-
-  // Show loading while checking authentication or mounting
-  if (adminLoading || !mounted) {
-    return (
-      <div className="min-h-screen flex align-items-center justify-content-center">
-        <div className="text-center">
-          <i className="pi pi-spin pi-spinner text-4xl text-primary mb-3"></i>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
+  // Show loading while checking admin authentication
+  if (adminLoading) {
+    return <LoadingSpinner message="Authenticating..." />;
   }
 
-  const clearAuthData = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.reload();
-  };
+
 
   const openLoginModal = (userType: 'patient' | 'doctor' | 'staff' | 'admin') => {
     if (userType === 'admin') {
@@ -79,7 +71,7 @@ export default function Home() {
   };
 
   const closeLoginModal = () => {
-    setLoginModal({ visible: false, userType: 'patient' });
+    setLoginModal(prev => ({ ...prev, visible: false }));
   };
 
   if (!isAuthenticated) {
@@ -106,18 +98,18 @@ export default function Home() {
           }
         `}</style>
         <HeroSection onOpenLoginModal={openLoginModal} />
-        <FeaturesSection onOpenLoginModal={openLoginModal} />
-        <PlatformScreensSection />
+        <div id="features"><FeaturesSection onOpenLoginModal={openLoginModal} /></div>
+        <div id="screens"><PlatformScreensSection /></div>
         <BenefitsSection />
         <TestimonialsSection />
-        <PricingSection />
+        <div id="pricing"><PricingSection /></div>
         <SecuritySection />
         <EnterpriseSecuritySection />
         <IntegrationsSection />
         <ApiArchitectureSection />
         <CtaSection />
-        <FooterSection />
-        <LoginSection onOpenLoginModal={openLoginModal} />
+        <div id="contact"><FooterSection /></div>
+
         
         <LoginModal
           visible={loginModal.visible}
@@ -131,4 +123,33 @@ export default function Home() {
         />
       </div>
     );
+  }
+
+  // Debug: Log user data
+  console.log('Current user:', user);
+  console.log('User role:', user?.role);
+  console.log('Is authenticated:', isAuthenticated);
+
+  // Render appropriate dashboard based on user role
+  switch (user?.role?.toLowerCase()) {
+    case 'admin':
+      return <AdminDashboard />;
+    case 'doctor':
+      return <DoctorDashboard />;
+    case 'staff':
+      return <StaffDashboard />;
+    case 'patient':
+    default:
+      return <PatientDashboard />;
+  }
+}
+
+export default function Home() {
+  return (
+    <ClientOnly
+      fallback={<LoadingSpinner />}
+    >
+      <HomeContent />
+    </ClientOnly>
+  );
 }

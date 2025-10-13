@@ -95,10 +95,19 @@ const HomePage: React.FC = () => {
 
   const fetchHospitals = async () => {
     try {
+      console.log('Fetching hospitals from:', `${process.env.NEXT_PUBLIC_API_URL}/hospitals?city=Hyderabad`);
       const response = await apiClient.get('/hospitals?city=Hyderabad');
-      setHospitals(response.data);
-    } catch (error) {
+      console.log('Hospitals response:', response.data);
+      setHospitals(response.data || []);
+    } catch (error: any) {
       console.error('Error fetching hospitals:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      setHospitals([]);
     } finally {
       setLoading(false);
     }
@@ -266,37 +275,25 @@ const HomePage: React.FC = () => {
     console.log('Sending request data:', requestData);
     
     try {
-      const response = await fetch('http://localhost:3002/api/appointments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      console.log('Response status:', response.status);
-      const data = await response.json();
-      console.log('Response data:', data);
+      const response = await apiClient.post('/appointments', requestData);
+      console.log('Response data:', response.data);
       
-      if (response.ok) {
-        // Show payment modal
-        setPaymentModal({ 
-          visible: true, 
-          appointmentData: {
-            appointmentId: data.id || 'local-' + Date.now(),
-            doctor: bookingModal.doctor,
-            date: selectedDate,
-            timeSlot: selectedTimeSlot,
-            amount: bookingModal.doctor.consultationFee
-          }
-        });
-        closeBookingModal();
-      } else {
-        alert('Failed to book appointment: ' + (data.message || 'Unknown error'));
-      }
-    } catch (error) {
+      // Show payment modal
+      setPaymentModal({ 
+        visible: true, 
+        appointmentData: {
+          appointmentId: response.data.id || 'local-' + Date.now(),
+          doctor: bookingModal.doctor,
+          date: selectedDate,
+          timeSlot: selectedTimeSlot,
+          amount: bookingModal.doctor.consultationFee
+        }
+      });
+      closeBookingModal();
+    } catch (error: any) {
       console.error('Error booking appointment:', error);
-      alert('Failed to book appointment. Please try again.');
+      const errorMessage = error.response?.data?.message || 'Failed to book appointment. Please try again.';
+      alert(errorMessage);
     } finally {
       setBooking(false);
     }

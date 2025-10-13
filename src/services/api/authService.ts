@@ -20,11 +20,12 @@ export interface PatientRegisterData {
   confirmPassword: string;
 }
 
-const USE_MOCK = process.env.NODE_ENV === 'development' || !process.env.NEXT_PUBLIC_API_URL;
+const USE_MOCK = false; // Always use real API for database storage
 
 export const authService = {
   // Login for all user types
   login: async (credentials: LoginCredentials) => {
+<<<<<<< HEAD
     console.log('=== AuthService Login Debug ===');
     console.log('Input credentials:', credentials);
     
@@ -57,6 +58,8 @@ export const authService = {
     if (USE_MOCK) {
       return await mockAuthService.login(credentials);
     }
+=======
+>>>>>>> 86d4ed91866c8f9deb8ef3438ac29134fff30829
     try {
       const response = await apiClient.post('/auth/login', credentials);
       return response.data;
@@ -68,11 +71,11 @@ export const authService = {
 
   // Patient registration
   registerPatient: async (userData: PatientRegisterData) => {
-    if (USE_MOCK) {
-      return await mockAuthService.registerPatient(userData);
-    }
     try {
-      const response = await apiClient.post('/auth/patient/register', userData);
+      const response = await apiClient.post('/auth/register', {
+        ...userData,
+        role: 'patient'
+      });
       return response.data;
     } catch (error) {
       console.warn('Backend unavailable, using mock service');

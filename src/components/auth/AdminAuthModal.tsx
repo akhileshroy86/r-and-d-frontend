@@ -164,9 +164,31 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
       <Toast ref={toast} />
       <Dialog
         header={
-          <div className="flex align-items-center gap-2">
-            <i className="pi pi-shield text-red-500"></i>
-            <span>{isSignUp ? 'Admin Registration' : 'Admin Login'}</span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            padding: '8px 0'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              backgroundColor: '#dc2626',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <i className="pi pi-shield" style={{ color: 'white', fontSize: '18px' }}></i>
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#1e293b' }}>
+                {isSignUp ? 'Admin Registration' : 'Admin Login'}
+              </h3>
+              <p style={{ margin: 0, fontSize: '14px', color: 'white' }}>
+                {isSignUp ? 'Create your admin account' : 'Welcome back! Please sign in to continue'}
+              </p>
+            </div>
           </div>
         }
         visible={visible}
@@ -174,10 +196,26 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
           onHide();
           resetForm();
         }}
-        style={{ width: '450px' }}
+        style={{ 
+          width: '500px',
+          borderRadius: '16px'
+        }}
+        contentStyle={{
+          borderRadius: '0 0 16px 16px',
+          padding: '0'
+        }}
+        headerStyle={{
+          borderRadius: '16px 16px 0 0',
+          backgroundColor: '#f8fafc',
+          border: 'none',
+          padding: '24px',
+          borderBottom: '1px solid #e2e8f0'
+        }}
         modal
+        draggable={false}
+        resizable={false}
       >
-        <div className="p-4">
+        <div style={{ padding: '24px' }}>
           {/* Development Notice */}
           <div className="bg-blue-50 border-left-3 border-blue-500 p-3 mb-4">
             <div className="flex align-items-center gap-2 mb-2">
@@ -189,59 +227,58 @@ const AdminAuthModal = ({ visible, onHide }: AdminAuthModalProps) => {
             </p>
           </div>
           
-          <div className="flex flex-column gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {isSignUp && (
-              <div className="field">
-                <label className="block text-900 font-medium mb-2">Full Name *</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Full Name *</label>
                 <InputText
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full"
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
                 />
               </div>
             )}
 
-            <div className="field">
-              <label className="block text-900 font-medium mb-2">Email *</label>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Email Address *</label>
               <InputText
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="admin@hospital.com"
                 className="w-full"
                 type="email"
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db' }}
               />
             </div>
 
-            <div className="field">
-              <label className="block text-900 font-medium mb-2">Password *</label>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Password *</label>
               <Password
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Enter password"
-                className="w-full"
                 toggleMask
                 header={isSignUp ? passwordHeader : undefined}
                 footer={isSignUp ? passwordFooter : undefined}
+                style={{ width: '100%' }}
+                inputStyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', width: '100%' }}
               />
             </div>
 
             {isSignUp && (
-              <>
-                <div className="field">
-                  <label className="block text-900 font-medium mb-2">Confirm Password *</label>
-                  <Password
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    placeholder="Confirm password"
-                    className="w-full"
-                    toggleMask
-                    feedback={false}
-                  />
-                </div>
-
-
-              </>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Confirm Password *</label>
+                <Password
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  placeholder="Confirm password"
+                  toggleMask
+                  feedback={false}
+                  style={{ width: '100%' }}
+                  inputStyle={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', width: '100%' }}
+                />
+              </div>
             )}
 
             <Button

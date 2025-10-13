@@ -7,11 +7,17 @@ import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { Rating } from 'primereact/rating';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
+import { logout } from '../../store/slices/authSlice';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   const todayAppointments = [
     {
@@ -76,9 +82,18 @@ const DoctorDashboard: React.FC = () => {
 
   return (
     <div className="p-4">
-      <div className="mb-4">
-        <h1>Good morning, Dr. {user?.name}!</h1>
-        <p className="text-600">You have {stats.todayPatients} appointments scheduled for today.</p>
+      <div className="mb-4 flex justify-content-between align-items-center">
+        <div>
+          <h1>Good morning, Dr. {user?.name}!</h1>
+          <p className="text-600">You have {stats.todayPatients} appointments scheduled for today.</p>
+        </div>
+        <Button 
+          label="Logout" 
+          icon="pi pi-sign-out" 
+          severity="secondary" 
+          outlined 
+          onClick={handleLogout}
+        />
       </div>
 
       {/* Stats Cards */}

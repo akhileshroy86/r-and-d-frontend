@@ -16,6 +16,14 @@ export const useAdminAuth = () => {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
+      setLoading(true);
+      
+      // Check if we're on the client side
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+      
       const storedToken = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
@@ -23,12 +31,21 @@ export const useAdminAuth = () => {
         try {
           const parsedUser = JSON.parse(storedUser);
           if (parsedUser.role === 'admin') {
-            // Verify token is still valid
-            const verifiedUser = await adminAuthService.verifyToken();
-            dispatch(loginSuccess({
-              user: verifiedUser,
-              token: storedToken
-            }));
+            try {
+              // Try to verify token, but don't fail if API is not available
+              const verifiedUser = await adminAuthService.verifyToken();
+              dispatch(loginSuccess({
+                user: verifiedUser,
+                token: storedToken
+              }));
+            } catch (verifyError) {
+              console.log('Token verification failed, using stored user data');
+              // If verification fails, use stored user data (for development)
+              dispatch(loginSuccess({
+                user: parsedUser,
+                token: storedToken
+              }));
+            }
           }
         } catch (error) {
           // Token invalid, clear storage
@@ -36,6 +53,7 @@ export const useAdminAuth = () => {
           localStorage.removeItem('user');
         }
       }
+      setLoading(false);
     };
 
     initializeAuth();

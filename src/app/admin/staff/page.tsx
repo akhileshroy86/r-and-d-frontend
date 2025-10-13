@@ -309,6 +309,119 @@ const StaffPage: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 <Button 
+                  label="Check Database" 
+                  icon="pi pi-database" 
+                  className="p-button-success"
+                  onClick={async () => {
+                    try {
+                      const [usersRes, staffRes] = await Promise.all([
+                        fetch('/api/users'),
+                        fetch('/api/staff')
+                      ]);
+                      
+                      const usersData = await usersRes.json();
+                      const staffData = await staffRes.json();
+                      
+                      console.log('=== DATABASE CHECK ===');
+                      console.log('Users endpoint:', usersData);
+                      console.log('Staff endpoint:', staffData);
+                      
+                      const userCount = usersData.count || usersData.data?.length || 0;
+                      const staffCount = staffData.count || staffData.data?.length || 0;
+                      
+                      toast.current?.show({
+                        severity: 'info',
+                        summary: 'Database Status',
+                        detail: `Users: ${userCount} | Staff: ${staffCount}`,
+                        life: 8000
+                      });
+                    } catch (error) {
+                      console.error('Database check failed:', error);
+                      toast.current?.show({
+                        severity: 'error',
+                        summary: 'Database Check Failed',
+                        detail: 'Could not connect to database',
+                        life: 3000
+                      });
+                    }
+                  }}
+                />
+                <Button 
+                  label="Add Demo Staff" 
+                  icon="pi pi-plus-circle" 
+                  className="p-button-warning"
+                  onClick={() => {
+                    const demoStaff = [
+                      {
+                        email: 'john.smith@gmail.com',
+                        password: 'john',
+                        name: 'John Smith',
+                        role: 'staff',
+                        id: 'demo1'
+                      },
+                      {
+                        email: 'johndoe@gmail.com',
+                        password: 'johndoe',
+                        name: 'John Doe',
+                        role: 'staff',
+                        id: 'demo2'
+                      },
+                      {
+                        email: 'sarah.johnson@gmail.com', 
+                        password: 'sarah',
+                        name: 'Sarah Johnson',
+                        role: 'staff',
+                        id: 'demo3'
+                      }
+                    ];
+                    
+                    const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+                    const allStaff = [...existingStaff, ...demoStaff];
+                    localStorage.setItem('staffCredentials', JSON.stringify(allStaff));
+                    
+                    console.log('=== DEMO STAFF ADDED ===');
+                    console.log('All credentials now:', allStaff);
+                    
+                    toast.current?.show({
+                      severity: 'success',
+                      summary: 'Demo Staff Added',
+                      detail: `Added 3 demo staff. Total: ${allStaff.length} credentials`,
+                      life: 5000
+                    });
+                  }}
+                />
+                <Button 
+                  label="Test Demo Staff" 
+                  icon="pi pi-user" 
+                  className="p-button-secondary"
+                  onClick={async () => {
+                    try {
+                      const { authService } = await import('../../../services/api/authService');
+                      const result = await authService.login({
+                        email: 'johndoe@gmail.com',
+                        password: 'johndoe'
+                      });
+                      
+                      console.log('Demo login result:', result);
+                      
+                      toast.current?.show({
+                        severity: 'success',
+                        summary: 'Demo Login SUCCESS',
+                        detail: `✅ johndoe@gmail.com works!`,
+                        life: 8000
+                      });
+                    } catch (error: any) {
+                      console.error('Demo login error:', error);
+                      toast.current?.show({
+                        severity: 'error',
+                        summary: 'Demo Login FAILED',
+                        detail: `❌ johndoe@gmail.com failed: ${error.message}`,
+                        life: 8000
+                      });
+                    }
+                  }}
+                />
+                <Button 
                   label="Back to Dashboard" 
                   icon="pi pi-arrow-left" 
                   className="p-button-outlined"

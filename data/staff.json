@@ -1,0 +1,40 @@
+[
+  {
+    "id": "staff_1760145040503_z2lgfzj0n",
+    "firstName": "sdjfbfa",
+    "lastName": "sdjfbfa",
+    "fullName": "sdjfbfa sdjfbfa",
+    "email": "testone@gmail.com",
+    "password": "testone",
+    "phone": "7899398562",
+    "position": "pharmacy",
+    "role": "staff",
+    "isActive": true,
+    "createdAt": "2025-10-11T01:10:40.503Z",
+    "user": {
+      "id": "user_staff_1760145040503_z2lgfzj0n",
+      "email": "testone@gmail.com",
+      "role": "staff",
+      "isActive": true
+    }
+  },
+  {
+    "id": "staff_1760145103870_7aavgfgo2",
+    "firstName": "Rahul",
+    "lastName": "Rahul",
+    "fullName": "Rahul Rahul",
+    "email": "rahul@gmail.com",
+    "password": "rahul",
+    "phone": "7899398562",
+    "position": "billing",
+    "role": "staff",
+    "isActive": true,
+    "createdAt": "2025-10-11T01:11:43.870Z",
+    "user": {
+      "id": "user_staff_1760145103870_7aavgfgo2",
+      "email": "rahul@gmail.com",
+      "role": "staff",
+      "isActive": true
+    }
+  }
+]

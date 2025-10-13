@@ -10,14 +10,10 @@ export interface ChangePasswordData {
 
 export const staffAuthService = {
   login: async (data: StaffLoginData) => {
-    // Get staff credentials from localStorage to pass to API
-    const staffCredentials = localStorage.getItem('staffCredentials') || '[]';
-    
     const response = await fetch('/api/auth/staff/login', {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
-        'x-staff-credentials': staffCredentials
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     });

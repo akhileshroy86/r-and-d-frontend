@@ -7,7 +7,6 @@ import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Password } from 'primereact/password';
 import { Tag } from 'primereact/tag';
 import { Toast } from 'primereact/toast';
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
@@ -81,24 +80,93 @@ const StaffManagement: React.FC = () => {
       return;
     }
 
-    let result;
     if (editMode && selectedStaff) {
-      result = await updateStaff(selectedStaff.id, formData);
-    } else {
-      result = await addStaff(formData);
+      const result = await updateStaff(selectedStaff.id, formData);
+      toast.current?.show({
+        severity: result.success ? 'success' : 'error',
+        summary: result.success ? 'Success' : 'Error',
+        detail: result.message
+      });
+      if (result.success) {
+        setShowDialog(false);
+        setSelectedStaff(null);
+        setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
+      }
+      return;
     }
 
-    toast.current?.show({
-      severity: result.success ? 'success' : 'error',
-      summary: result.success ? 'Success' : 'Error',
-      detail: result.message,
-      life: result.success && !editMode ? 10000 : 3000
-    });
-
-    if (result.success) {
-      setShowDialog(false);
-      setSelectedStaff(null);
-      setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
+    // Generate password
+    const emailPrefix = formData.email.split('@')[0];
+    const generatedPassword = emailPrefix.includes('.') ? emailPrefix.split('.')[0].toLowerCase() : emailPrefix.toLowerCase();
+    
+    try {
+      const response = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}` 
+        },
+        body: JSON.stringify({
+          firstName: formData.fullName.split(' ')[0],
+          lastName: formData.fullName.split(' ').slice(1).join(' ') || formData.fullName.split(' ')[0],
+          email: formData.email,
+          password: generatedPassword,
+          phone: formData.phone,
+          position: formData.position
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        // Store credentials for login
+        const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+        existingStaff.push({
+          email: formData.email,
+          password: generatedPassword,
+          name: formData.fullName,
+          role: 'staff',
+          id: result.data.id
+        });
+        localStorage.setItem('staffCredentials', JSON.stringify(existingStaff));
+        
+        // Add to local state
+        const newStaff = {
+          id: result.data.id,
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          position: formData.position,
+          isActive: true,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        setStaffList(prev => [...prev, newStaff]);
+        
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Staff Added Successfully',
+          detail: `✅ Saved to database. Login: ${formData.email} | Password: ${generatedPassword}`,
+          life: 10000
+        });
+        
+        setShowDialog(false);
+        setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
+      } else {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Database Error',
+          detail: result.error || 'Failed to save staff to database',
+          life: 5000
+        });
+      }
+    } catch (error: any) {
+      console.error('Staff creation error:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Connection Error',
+        detail: 'Failed to connect to backend server',
+        life: 5000
+      });
     }
   };
 
@@ -154,7 +222,14 @@ const StaffManagement: React.FC = () => {
     />
   );
 
-  const rightToolbarTemplate = () => null;
+  const rightToolbarTemplate = () => (
+    <Button 
+      label="Refresh" 
+      icon="pi pi-refresh" 
+      onClick={() => loadStaffList()}
+      loading={loading}
+    />
+  );
 
   return (
     <div className="staff-management p-4">
@@ -173,6 +248,7 @@ const StaffManagement: React.FC = () => {
         <Toolbar 
           className="mb-4" 
           left={leftToolbarTemplate}
+          right={rightToolbarTemplate}
         />
         
         <DataTable 
@@ -230,6 +306,7 @@ const StaffManagement: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full"
               placeholder="Enter email address"
+              disabled={editMode}
             />
           </div>
           
@@ -254,19 +331,6 @@ const StaffManagement: React.FC = () => {
               placeholder="Enter position/role"
             />
           </div>
-          
-          {!editMode && (
-            <div className="p-3 border-round bg-blue-50 border-blue-200">
-              <h4 className="mt-0 mb-2 text-blue-900">🔐 Login Credentials</h4>
-              <p className="m-0 text-blue-800 text-sm">
-                Password will be auto-generated from the first name of the Gmail address.
-                <br />
-                <strong>Examples:</strong> 
-                <br />• john.doe@gmail.com → password: "john"
-                <br />• rakesh@gmail.com → password: "rakesh"
-              </p>
-            </div>
-          )}
         </div>
         
         <div className="flex justify-content-end gap-2 mt-4">

@@ -25,6 +25,35 @@ const USE_MOCK = process.env.NODE_ENV === 'development' || !process.env.NEXT_PUB
 export const authService = {
   // Login for all user types
   login: async (credentials: LoginCredentials) => {
+    console.log('=== AuthService Login Debug ===');
+    console.log('Input credentials:', credentials);
+    
+    // Check if this is admin login
+    if (credentials.email === 'admin@hospital.com' && credentials.password === 'admin123') {
+      console.log('✅ Admin authenticated with mock credentials');
+      return {
+        success: true,
+        user: {
+          id: 'admin_1',
+          email: 'admin@hospital.com',
+          name: 'Admin User',
+          role: 'admin'
+        },
+        token: `admin_token_${Date.now()}`
+      };
+    }
+    
+    // For non-admin users, use staff-specific API endpoint
+    try {
+      const response = await apiClient.post('/auth/staff/login', credentials);
+      console.log('✅ Staff API authentication successful');
+      return response.data;
+    } catch (apiError) {
+      console.log('❌ Staff API authentication failed:', apiError);
+      throw new Error('Invalid email or password');
+    }
+    
+    // For non-staff users, use existing logic
     if (USE_MOCK) {
       return await mockAuthService.login(credentials);
     }

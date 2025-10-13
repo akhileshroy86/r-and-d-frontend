@@ -104,6 +104,14 @@ export default function Home() {
                   className="w-full p-3 text-lg"
                   severity="info"
                   outlined
+                  onClick={() => router.push('/auth')}
+                />
+                <Button 
+                  label="Staff Login (Modal)" 
+                  icon="pi pi-users" 
+                  className="w-full p-3 text-lg"
+                  severity="info"
+                  text
                   onClick={() => openLoginModal('staff')}
                 />
                 <Button 

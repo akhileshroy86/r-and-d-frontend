@@ -142,6 +142,16 @@ const StaffDashboard: React.FC = () => {
   
   // State management
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Check URL hash to set initial tab
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash === '#queue') {
+      setActiveTab(1); // Queue Management tab
+    } else if (hash === '#drawer') {
+      setActiveTab(2); // Drawer/Counter tab
+    }
+  }, []);
   const [walkInDialog, setWalkInDialog] = useState(false);
   const [patientSearchDialog, setPatientSearchDialog] = useState(false);
   const [reportDialog, setReportDialog] = useState(false);
@@ -334,12 +344,14 @@ const StaffDashboard: React.FC = () => {
         });
       }
     } else {
-      // Initialize with empty queues if no saved data
-      setPatientQueues({
-        'dr1': [],
-        'dr2': [],
-        'dr3': []
-      });
+      // Initialize with sample queues if no saved data
+      const sampleQueues = {
+        'dr1': ['John Doe', 'Jane Smith'],
+        'dr2': ['Mike Johnson', 'Sarah Wilson', 'Tom Brown'],
+        'dr3': ['Lisa Davis']
+      };
+      setPatientQueues(sampleQueues);
+      localStorage.setItem('patientQueues', JSON.stringify(sampleQueues));
     }
     
     // Load queue state
@@ -350,7 +362,78 @@ const StaffDashboard: React.FC = () => {
         setQueueState(parsedQueueState);
       } catch (error) {
         console.error('Error loading queue state:', error);
+        // Initialize with default queue data if parsing fails
+        const defaultQueueData = [
+          {
+            doctorId: 'dr1',
+            doctorName: 'Dr. Smith',
+            department: 'Cardiology',
+            status: 'active' as const,
+            waitingCount: 0,
+            completedToday: 8,
+            avgWaitTime: '15 min',
+            efficiency: 85
+          },
+          {
+            doctorId: 'dr2',
+            doctorName: 'Dr. Johnson',
+            department: 'Orthopedics',
+            status: 'active' as const,
+            waitingCount: 0,
+            completedToday: 12,
+            avgWaitTime: '20 min',
+            efficiency: 92
+          },
+          {
+            doctorId: 'dr3',
+            doctorName: 'Dr. Brown',
+            department: 'General Medicine',
+            status: 'break' as const,
+            waitingCount: 0,
+            avgWaitTime: '12 min',
+            completedToday: 15,
+            efficiency: 78
+          }
+        ];
+        setQueueState(defaultQueueData);
+        localStorage.setItem('queueState', JSON.stringify(defaultQueueData));
       }
+    } else {
+      // Initialize with default queue data if no saved data
+      const defaultQueueData = [
+        {
+          doctorId: 'dr1',
+          doctorName: 'Dr. Smith',
+          department: 'Cardiology',
+          status: 'active' as const,
+          waitingCount: 0,
+          completedToday: 8,
+          avgWaitTime: '15 min',
+          efficiency: 85
+        },
+        {
+          doctorId: 'dr2',
+          doctorName: 'Dr. Johnson',
+          department: 'Orthopedics',
+          status: 'active' as const,
+          waitingCount: 0,
+          completedToday: 12,
+          avgWaitTime: '20 min',
+          efficiency: 92
+        },
+        {
+          doctorId: 'dr3',
+          doctorName: 'Dr. Brown',
+          department: 'General Medicine',
+          status: 'break' as const,
+          waitingCount: 0,
+          completedToday: 15,
+          avgWaitTime: '12 min',
+          efficiency: 78
+        }
+      ];
+      setQueueState(defaultQueueData);
+      localStorage.setItem('queueState', JSON.stringify(defaultQueueData));
     }
     
     // Load appointments
@@ -733,11 +816,50 @@ const StaffDashboard: React.FC = () => {
     if (!savedAppointments && pendingAppointments.length > 0) {
       setAppointments(pendingAppointments);
     }
-    setQueueState(displayQueueData);
-  }, [pendingAppointments]);
+    
+    // Initialize queue data if empty
+    if (queueData.length === 0) {
+      const defaultQueueData = [
+        {
+          doctorId: 'dr1',
+          doctorName: 'Dr. Smith',
+          department: 'Cardiology',
+          status: 'active' as const,
+          waitingCount: (patientQueues['dr1'] || []).length,
+          completedToday: 8,
+          avgWaitTime: '15 min',
+          efficiency: 85
+        },
+        {
+          doctorId: 'dr2',
+          doctorName: 'Dr. Johnson',
+          department: 'Orthopedics',
+          status: 'active' as const,
+          waitingCount: (patientQueues['dr2'] || []).length,
+          completedToday: 12,
+          avgWaitTime: '20 min',
+          efficiency: 92
+        },
+        {
+          doctorId: 'dr3',
+          doctorName: 'Dr. Brown',
+          department: 'General Medicine',
+          status: 'break' as const,
+          waitingCount: (patientQueues['dr3'] || []).length,
+          completedToday: 15,
+          avgWaitTime: '12 min',
+          efficiency: 78
+        }
+      ];
+      setQueueState(defaultQueueData);
+      localStorage.setItem('queueState', JSON.stringify(defaultQueueData));
+    } else {
+      setQueueState(queueData);
+    }
+  }, [pendingAppointments, queueData, patientQueues]);
 
-  // Use real queue data only
-  const displayQueueData = queueData;
+  // Use real queue data or fallback to local state
+  const displayQueueData = queueState.length > 0 ? queueState : queueData;
 
   const doctors = [
     { label: 'Dr. Smith - Cardiology', value: 'dr1', department: 'Cardiology' },
@@ -1775,6 +1897,12 @@ const StaffDashboard: React.FC = () => {
           icon="pi pi-list" 
           outlined
           onClick={() => setQueueSidebar(true)}
+        />
+        <Button 
+          label="Queue Management" 
+          icon="pi pi-users" 
+          className="p-button-info"
+          onClick={() => setActiveTab(1)}
         />
         <Button 
           label={t('generateReport')} 

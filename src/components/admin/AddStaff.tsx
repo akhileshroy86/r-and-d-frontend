@@ -74,36 +74,60 @@ const AddStaff: React.FC = () => {
     setLoading(true);
     
     try {
-      // Mock API call - simulate adding staff
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate password from first name
+      const generatedPassword = formData.fullName.split(' ')[0].toLowerCase();
       
-      // Store in localStorage for demo purposes
-      const existingStaff = JSON.parse(localStorage.getItem('staffList') || '[]');
+      // Store in localStorage using same format as StaffManagement
+      const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
       const newStaff = {
-        id: Date.now().toString(),
-        fullName: formData.fullName,
+        id: `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         email: formData.email,
+        password: generatedPassword,
+        name: formData.fullName,
         phone: formData.phoneNumber,
         position: formData.position,
-        isActive: formData.isActive,
-        createdAt: new Date().toISOString().split('T')[0],
-        lastLogin: null
+        role: 'staff',
+        isActive: formData.isActive
       };
       
-      existingStaff.push(newStaff);
-      localStorage.setItem('staffList', JSON.stringify(existingStaff));
+      // Call backend directly
+      const response = await fetch('http://localhost:3002/api/v1/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.fullName.split(' ')[0],
+          lastName: formData.fullName.split(' ').slice(1).join(' ') || formData.fullName.split(' ')[0],
+          fullName: formData.fullName,
+          email: formData.email,
+          password: generatedPassword,
+          phone: formData.phoneNumber,
+          position: formData.position
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Staff creation failed:', errorData);
+        throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: Failed to save to database`);
+      }
+      
+      // Also save to localStorage for immediate display
+      const filteredStaff = existingStaff.filter((s: any) => s.email !== formData.email);
+      filteredStaff.push(newStaff);
+      localStorage.setItem('staffCredentials', JSON.stringify(filteredStaff));
       
       toast.current?.show({ 
         severity: 'success', 
         summary: 'Success', 
-        detail: 'Staff member added successfully!' 
+        detail: `Staff member added successfully! Login: ${formData.email} | Password: ${generatedPassword}`,
+        life: 8000
       });
       handleReset();
     } catch (error: any) {
       toast.current?.show({ 
         severity: 'error', 
         summary: 'Error', 
-        detail: 'Failed to add staff member' 
+        detail: error.message || 'Failed to add staff member' 
       });
     } finally {
       setLoading(false);

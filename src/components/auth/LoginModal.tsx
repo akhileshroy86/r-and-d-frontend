@@ -81,7 +81,28 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
           setLoading(false);
           return;
         }
-        response = await authService.login({ email: formData.email, password: formData.password });
+        
+        // For staff, use direct API call
+        if (userType === 'staff') {
+          const staffResponse = await fetch('/api/auth/staff/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email, password: formData.password })
+          });
+          
+          const staffResult = await staffResponse.json();
+          
+          if (staffResult.success && staffResult.data) {
+            response = {
+              user: staffResult.data.user,
+              token: staffResult.data.token
+            };
+          } else {
+            throw new Error(staffResult.message || 'Staff login failed');
+          }
+        } else {
+          response = await authService.login({ email: formData.email, password: formData.password });
+        }
       }
 
       // Store token in localStorage

@@ -43,18 +43,11 @@ export interface ChangePasswordData {
 export const staffService = {
   // Create new staff member
   createStaff: async (data: CreateStaffData): Promise<StaffMember> => {
-    // First create user account
-    const userResponse = await apiClient.post('/users', {
-      email: data.email,
-      password: data.password,
-      role: 'STAFF'
-    });
-
-    // Then create staff profile
     const staffResponse = await apiClient.post('/staff', {
-      userId: userResponse.data.id,
       firstName: data.firstName,
       lastName: data.lastName,
+      email: data.email,
+      password: data.password,
       phone: data.phone,
       position: data.position
     });

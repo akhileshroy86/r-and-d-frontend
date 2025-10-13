@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@next/swc-win32-x64-msvc": "^15.5.4",
+    "@prisma/client": "^6.17.1",
     "@reduxjs/toolkit": "^1.9.7",
     "axios": "^1.12.2",
     "chart.js": "^4.5.0",
@@ -20,6 +21,7 @@
     "primeflex": "^3.3.1",
     "primeicons": "^6.0.1",
     "primereact": "^10.9.7",
+    "prisma": "^6.17.1",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.63.0",

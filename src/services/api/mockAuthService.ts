@@ -41,9 +41,12 @@ export const mockAuthService = {
     // If not found in static users, check dynamic staff credentials
     if (!user) {
       const staffCredentials = getStaffCredentials();
+      console.log('All staff credentials:', staffCredentials);
       
       for (const staffUser of staffCredentials) {
-        console.log(`Comparing: ${staffUser.email} === ${credentials.email} && ${staffUser.password} === ${credentials.password}`);
+        console.log(`Comparing: "${staffUser.email}" === "${credentials.email}" && "${staffUser.password}" === "${credentials.password}"`);
+        console.log('Email match:', staffUser.email === credentials.email);
+        console.log('Password match:', staffUser.password === credentials.password);
         if (staffUser.email === credentials.email && staffUser.password === credentials.password) {
           user = staffUser;
           console.log('MATCH FOUND:', user);

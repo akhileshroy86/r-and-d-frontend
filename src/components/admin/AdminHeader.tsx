@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
 import { Avatar } from 'primereact/avatar';
@@ -16,6 +16,11 @@ const AdminHeader: React.FC = () => {
   const { signOut } = useAdminAuth();
   const { user } = useSelector((state: RootState) => state.auth);
   const menuRef = useRef<Menu>(null);
+  const [userName, setUserName] = useState('');
+  
+  useEffect(() => {
+    setUserName(user?.name || 'Admin User');
+  }, [user]);
   
   const campusOptions = [
     { label: 'Main Campus', value: 'main' },
@@ -84,9 +89,9 @@ const AdminHeader: React.FC = () => {
 
             {/* User Menu */}
             <div className="flex align-items-center gap-2">
-              <span className="text-600 hidden md:inline">{user?.name}</span>
+              <span className="text-600 hidden md:inline">{userName}</span>
               <Avatar 
-                label={user?.name?.charAt(0) || 'A'}
+                label={userName?.charAt(0) || 'A'}
                 shape="circle" 
                 size="normal"
                 className="cursor-pointer bg-blue-500 text-white"
@@ -133,7 +138,7 @@ const AdminHeader: React.FC = () => {
         <div className="flex justify-content-between align-items-center">
           {/* Left Side - Greeting */}
           <div>
-            <h2 className="text-white m-0 mb-1">Good morning, {user?.name || 'Admin'} 👋</h2>
+            <h2 className="text-white m-0 mb-1">Good morning, {userName} 👋</h2>
             <p className="text-blue-100 m-0">Here's today's snapshot for Apollo Medical Center.</p>
           </div>
 

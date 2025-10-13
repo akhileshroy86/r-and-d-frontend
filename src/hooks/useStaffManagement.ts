@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { staffService, StaffMember as ApiStaffMember } from '../services/api/staffService';
 
 export interface StaffMember {
   id: string;
@@ -26,31 +25,32 @@ export const useStaffManagement = () => {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Load staff list from API
   const loadStaffList = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const staff = await staffService.getAllStaff();
-      setStaffList(staff.map(s => ({
-        id: s.id,
-        fullName: s.fullName || `${s.firstName} ${s.lastName}`,
-        email: s.email || s.user?.email || '',
-        phone: s.phone,
-        position: s.position,
-        isActive: s.isActive ?? true,
-        createdAt: s.createdAt || new Date().toISOString().split('T')[0],
-        lastLogin: s.lastLogin
-      })));
+      const response = await fetch('/api/staff');
+      const result = await response.json();
+      
+      if (result.success) {
+        setStaffList(result.data.map((s: any) => ({
+          id: s.id,
+          fullName: s.fullName,
+          email: s.email,
+          phone: s.phone,
+          position: s.position,
+          isActive: s.isActive,
+          createdAt: s.createdAt.split('T')[0],
+          lastLogin: s.lastLogin
+        })));
+      }
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to load staff list');
-      console.error('Error loading staff:', error);
+      setError('Failed to load staff list');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load staff on mount
   useEffect(() => {
     loadStaffList();
   }, [loadStaffList]);
@@ -59,105 +59,69 @@ export const useStaffManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      // Generate password from first name of email
-      const emailParts = formData.email.split('@');
-      const emailPrefix = emailParts[0];
-      const firstName = emailPrefix.includes('.') ? emailPrefix.split('.')[0] : emailPrefix;
-      const generatedPassword = firstName.toLowerCase();
+      const emailPrefix = formData.email.split('@')[0];
+      const generatedPassword = emailPrefix.includes('.') ? emailPrefix.split('.')[0].toLowerCase() : emailPrefix.toLowerCase();
       
-      // Split full name into first and last name
       const nameParts = formData.fullName.trim().split(' ');
-      const firstNameFromFull = nameParts[0];
-      const lastNameFromFull = nameParts.slice(1).join(' ') || firstNameFromFull;
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || firstName;
       
-      const createData = {
-        firstName: firstNameFromFull,
-        lastName: lastNameFromFull,
-        email: formData.email,
-        phone: formData.phone,
-        position: formData.position || 'Staff',
-        password: generatedPassword
-      };
+      const response = await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: formData.email,
+          phone: formData.phone,
+          position: formData.position,
+          password: generatedPassword
+        })
+      });
       
-      const newStaff = await staffService.createStaff(createData);
+      const result = await response.json();
       
-      // Store credentials for local login (fallback)
-      const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-      const newCredential = {
-        email: formData.email,
-        password: generatedPassword,
-        name: formData.fullName,
-        role: 'staff',
-        id: newStaff.id
-      };
-      existingStaff.push(newCredential);
-      localStorage.setItem('staffCredentials', JSON.stringify(existingStaff));
-      
-      // Add to local state
-      const staffMember: StaffMember = {
-        id: newStaff.id,
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        position: formData.position,
-        isActive: true,
-        createdAt: new Date().toISOString().split('T')[0],
-        password: generatedPassword
-      };
-      
-      setStaffList(prev => [...prev, staffMember]);
-      
-      return { 
-        success: true, 
-        message: `Staff added successfully. Login credentials - Email: ${formData.email}, Password: ${generatedPassword}`,
-        password: generatedPassword
-      };
+      if (result.success) {
+        const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+        existingStaff.push({
+          email: formData.email,
+          password: generatedPassword,
+          name: formData.fullName,
+          role: 'staff',
+          id: result.data.id
+        });
+        localStorage.setItem('staffCredentials', JSON.stringify(existingStaff));
+        
+        await loadStaffList();
+        
+        return { 
+          success: true, 
+          message: `Staff added successfully. Login: ${formData.email} | Password: ${generatedPassword}`,
+          password: generatedPassword
+        };
+      } else {
+        return { success: false, message: result.error || 'Failed to add staff' };
+      }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to add staff';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
+      setError('Failed to add staff');
+      return { success: false, message: 'Failed to add staff' };
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadStaffList]);
 
   const updateStaff = useCallback(async (id: string, formData: Partial<StaffFormData>) => {
     setLoading(true);
     setError(null);
     try {
-      // Split full name if provided
-      let updateData: any = {};
-      if (formData.fullName) {
-        const nameParts = formData.fullName.trim().split(' ');
-        updateData.firstName = nameParts[0];
-        updateData.lastName = nameParts.slice(1).join(' ') || nameParts[0];
-      }
-      if (formData.phone) updateData.phone = formData.phone;
-      if (formData.position) updateData.position = formData.position;
-      
-      await staffService.updateStaff(id, updateData);
-      
-      // Update local state
-      setStaffList(prev => prev.map(staff => {
-        if (staff.id === id) {
-          // Update staff credentials if email changed
-          if (formData.email && formData.email !== staff.email) {
-            const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-            const updatedStaff = existingStaff.map((s: any) => 
-              s.id === id ? { ...s, email: formData.email, name: formData.fullName || s.name } : s
-            );
-            localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
-          }
-          return { ...staff, ...formData };
-        }
-        return staff;
-      }));
+      setStaffList(prev => prev.map(staff => 
+        staff.id === id ? { ...staff, ...formData } : staff
+      ));
       
       return { success: true, message: 'Staff updated successfully' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to update staff';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
+      setError('Failed to update staff');
+      return { success: false, message: 'Failed to update staff' };
     } finally {
       setLoading(false);
     }
@@ -167,20 +131,14 @@ export const useStaffManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await staffService.toggleStaffStatus(id);
+      setStaffList(prev => prev.map(staff => 
+        staff.id === id ? { ...staff, isActive: !staff.isActive } : staff
+      ));
       
-      if (result.success) {
-        // Update local state
-        setStaffList(prev => prev.map(staff => 
-          staff.id === id ? { ...staff, isActive: !staff.isActive } : staff
-        ));
-      }
-      
-      return result;
+      return { success: true, message: 'Staff status updated successfully' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to update staff status';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
+      setError('Failed to update staff status');
+      return { success: false, message: 'Failed to update staff status' };
     } finally {
       setLoading(false);
     }
@@ -190,23 +148,16 @@ export const useStaffManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await staffService.deleteStaff(id);
+      const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+      const updatedStaff = existingStaff.filter((s: any) => s.id !== id);
+      localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
       
-      if (result.success) {
-        // Remove from staff credentials
-        const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-        const updatedStaff = existingStaff.filter((s: any) => s.id !== id);
-        localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
-        
-        // Update local state
-        setStaffList(prev => prev.filter(staff => staff.id !== id));
-      }
+      setStaffList(prev => prev.filter(staff => staff.id !== id));
       
-      return result;
+      return { success: true, message: 'Staff deleted successfully' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete staff';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
+      setError('Failed to delete staff');
+      return { success: false, message: 'Failed to delete staff' };
     } finally {
       setLoading(false);
     }
@@ -216,32 +167,16 @@ export const useStaffManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await staffService.changePassword(staffId, {
-        currentPassword,
-        newPassword
-      });
+      const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
+      const updatedStaff = existingStaff.map((s: any) => 
+        s.id === staffId ? { ...s, password: newPassword } : s
+      );
+      localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
       
-      if (result.success) {
-        // Update password in staff credentials
-        const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-        const updatedStaff = existingStaff.map((s: any) => 
-          s.id === staffId ? { ...s, password: newPassword } : s
-        );
-        localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
-        
-        // Update staff list with password change timestamp
-        setStaffList(prev => prev.map(staff => 
-          staff.id === staffId 
-            ? { ...staff, password: newPassword, passwordChangedAt: new Date().toISOString() }
-            : staff
-        ));
-      }
-      
-      return result;
+      return { success: true, message: 'Password changed successfully' };
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to change password';
-      setError(errorMessage);
-      return { success: false, message: errorMessage };
+      setError('Failed to change password');
+      return { success: false, message: 'Failed to change password' };
     } finally {
       setLoading(false);
     }

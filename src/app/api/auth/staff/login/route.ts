@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,32 +14,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check credentials from localStorage (simulating database)
-    // In production, replace with actual database query
-    let staffCredentials = [];
-    try {
-      // Try to get from request headers (for server-side simulation)
-      const credentialsHeader = request.headers.get('x-staff-credentials');
-      if (credentialsHeader) {
-        staffCredentials = JSON.parse(credentialsHeader);
+    console.log('🔍 Checking credentials for:', email);
+
+    // Check credentials directly from Prisma database
+    const staff = await prisma.staff.findUnique({
+      where: {
+        email: email
       }
-    } catch (error) {
-      // Fallback to default demo data
-      staffCredentials = [
-        { id: 'demo1', email: 'john.smith@gmail.com', password: 'john', name: 'John Smith' },
-        { id: 'demo2', email: 'sarah.johnson@gmail.com', password: 'sarah', name: 'Sarah Johnson' }
-      ];
+    });
+
+    console.log('📊 Database query result:', staff ? 'Found staff' : 'No staff found');
+    if (staff) {
+      console.log('👤 Staff details:', {
+        id: staff.id,
+        email: staff.email,
+        fullName: staff.fullName,
+        isActive: staff.isActive,
+        storedPassword: staff.password
+      });
     }
 
-    const staff = staffCredentials.find((s: any) => s.email === email && s.password === password);
-
     if (!staff) {
+      console.log('❌ Staff not found in database for email:', email);
+      
+      // Let's also check what's actually in the database
+      const allStaff = await prisma.staff.findMany();
+      console.log('📋 All staff in database:', allStaff.map(s => ({ email: s.email, password: s.password })));
+      
       return NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 }
       );
     }
 
+    // Check if staff is active
+    if (!staff.isActive) {
+      console.log('❌ Staff account is inactive for:', email);
+      return NextResponse.json(
+        { success: false, message: 'Account is inactive' },
+        { status: 401 }
+      );
+    }
+
+    // Verify password (in production, use bcrypt for hashed passwords)
+    console.log('🔐 Password comparison:', {
+      provided: password,
+      stored: staff.password,
+      match: staff.password === password
+    });
+    
+    if (staff.password !== password) {
+      console.log('❌ Invalid password for:', email);
+      return NextResponse.json(
+        { success: false, message: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
+    console.log('✅ Login successful for:', email, '| Staff ID:', staff.id);
+    
     // Generate simple token (use JWT in production)
     const token = Buffer.from(`${staff.id}:${Date.now()}`).toString('base64');
 
@@ -47,17 +83,21 @@ export async function POST(request: NextRequest) {
         token,
         user: {
           id: staff.id,
-          name: staff.name,
+          name: staff.fullName,
           email: staff.email,
-          role: 'staff'
+          role: staff.role,
+          position: staff.position
         }
       }
     });
 
   } catch (error) {
+    console.error('❌ Login error:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }

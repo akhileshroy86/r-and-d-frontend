@@ -170,17 +170,30 @@ export const adminAuthService = {
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
     try {
-      const response = await apiClient.put('/admin/auth/change-password', {
-        currentPassword,
-        newPassword
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/admin/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
       });
-      return response.data;
-    } catch (error: any) {
-      // Fallback for development
-      if (error.code === 'ERR_NETWORK' || error.response?.status === 404) {
-        return { message: 'Password changed successfully (development mode)' };
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Password change failed');
       }
-      throw error;
+      
+      // Password is updated on the server side, no need to update localStorage here
+      
+      return data;
+    } catch (error: any) {
+      throw new Error(error.message || 'Password change failed');
     }
   },
 

@@ -82,23 +82,28 @@ const LoginModal = ({ visible, onHide, userType }: LoginModalProps) => {
           return;
         }
         
-        // For staff, use direct API call
+        // For staff, try backend first, then fallback to localStorage
         if (userType === 'staff') {
-          const staffResponse = await fetch('/api/auth/staff/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, password: formData.password })
-          });
-          
-          const staffResult = await staffResponse.json();
-          
-          if (staffResult.success && staffResult.data) {
-            response = {
-              user: staffResult.data.user,
-              token: staffResult.data.token
-            };
-          } else {
-            throw new Error(staffResult.message || 'Staff login failed');
+          try {
+            const staffResponse = await fetch('http://localhost:3002/api/v1/auth/staff/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: formData.email, password: formData.password })
+            });
+            
+            const staffResult = await staffResponse.json();
+            
+            if (staffResponse.ok && staffResult.access_token) {
+              response = {
+                user: staffResult.user,
+                token: staffResult.access_token
+              };
+            } else {
+              throw new Error('Backend authentication failed');
+            }
+          } catch (backendError) {
+            console.log('Backend unavailable, no fallback - database required');
+            throw new Error('Backend server not available. Please ensure the backend is running.');
           }
         } else {
           response = await authService.login({ email: formData.email, password: formData.password });

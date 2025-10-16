@@ -13,10 +13,11 @@ import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Toolbar } from 'primereact/toolbar';
 import { useStaffManagement, StaffMember } from '../../hooks/useStaffManagement';
 import { Message } from 'primereact/message';
+import { checkBackendHealth, testStaffEndpoint } from '../../utils/backendHealth';
 
 const StaffManagement: React.FC = () => {
   const toast = useRef<Toast>(null);
-  const { staffList, setStaffList, loading, error, addStaff, updateStaff, toggleStaffStatus, loadStaffList } = useStaffManagement();
+  const { staffList, setStaffList, loading, error, addStaff, updateStaff, toggleStaffStatus, loadStaffList, changeStaffPassword } = useStaffManagement();
   
   const [showDialog, setShowDialog] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -28,32 +29,15 @@ const StaffManagement: React.FC = () => {
     position: 'Staff',
     password: ''
   });
+  
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordChangeData, setPasswordChangeData] = useState({
+    email: '',
+    currentPassword: '',
+    newPassword: ''
+  });
 
-  // Initialize demo staff for fallback
-  useEffect(() => {
-    const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-    const demoStaff = [
-      {
-        email: 'john.smith@gmail.com',
-        password: 'john',
-        name: 'John Smith',
-        role: 'staff',
-        id: 'demo1'
-      },
-      {
-        email: 'sarah.johnson@gmail.com', 
-        password: 'sarah',
-        name: 'Sarah Johnson',
-        role: 'staff',
-        id: 'demo2'
-      }
-    ];
-    
-    const hasDemo = existingStaff.some((s: any) => s.id === 'demo1');
-    if (!hasDemo) {
-      localStorage.setItem('staffCredentials', JSON.stringify([...existingStaff, ...demoStaff]));
-    }
-  }, []);
+
 
   const openNew = () => {
     setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
@@ -99,74 +83,25 @@ const StaffManagement: React.FC = () => {
     const emailPrefix = formData.email.split('@')[0];
     const generatedPassword = emailPrefix.includes('.') ? emailPrefix.split('.')[0].toLowerCase() : emailPrefix.toLowerCase();
     
-    try {
-      const response = await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}` 
-        },
-        body: JSON.stringify({
-          firstName: formData.fullName.split(' ')[0],
-          lastName: formData.fullName.split(' ').slice(1).join(' ') || formData.fullName.split(' ')[0],
-          email: formData.email,
-          password: generatedPassword,
-          phone: formData.phone,
-          position: formData.position
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        // Store credentials for login
-        const existingStaff = JSON.parse(localStorage.getItem('staffCredentials') || '[]');
-        existingStaff.push({
-          email: formData.email,
-          password: generatedPassword,
-          name: formData.fullName,
-          role: 'staff',
-          id: result.data.id
-        });
-        localStorage.setItem('staffCredentials', JSON.stringify(existingStaff));
-        
-        // Add to local state
-        const newStaff = {
-          id: result.data.id,
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
-          position: formData.position,
-          isActive: true,
-          createdAt: new Date().toISOString().split('T')[0]
-        };
-        setStaffList(prev => [...prev, newStaff]);
-        
-        toast.current?.show({
-          severity: 'success',
-          summary: 'Staff Added Successfully',
-          detail: `✅ Saved to database. Login: ${formData.email} | Password: ${generatedPassword}`,
-          life: 10000
-        });
-        
-        setShowDialog(false);
-        setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
-      } else {
-        toast.current?.show({
-          severity: 'error',
-          summary: 'Database Error',
-          detail: result.error || 'Failed to save staff to database',
-          life: 5000
-        });
-      }
-    } catch (error: any) {
-      console.error('Staff creation error:', error);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Connection Error',
-        detail: 'Failed to connect to backend server',
-        life: 5000
-      });
+    const result = await addStaff({
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      position: formData.position,
+      password: generatedPassword
+    });
+    
+    toast.current?.show({
+      severity: result.success ? 'success' : 'error',
+      summary: result.success ? 'Staff Added Successfully' : 'Error',
+      detail: result.success ? `Login: ${formData.email} | Password: ${generatedPassword}` : result.message,
+      life: result.success ? 10000 : 5000
+    });
+    
+    if (result.success) {
+      setShowDialog(false);
+      setFormData({ fullName: '', email: '', phone: '', position: 'Staff', password: '' });
+      loadStaffList(); // Refresh from backend
     }
   };
 
@@ -186,6 +121,58 @@ const StaffManagement: React.FC = () => {
     });
   };
 
+  const changePassword = (staff: StaffMember) => {
+    setPasswordChangeData({
+      email: staff.email,
+      currentPassword: '',
+      newPassword: ''
+    });
+    setShowPasswordDialog(true);
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordChangeData.currentPassword || !passwordChangeData.newPassword) {
+      toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Please enter both current and new password' });
+      return;
+    }
+
+    try {
+      console.log('🔄 Making password change API call...');
+      const response = await fetch('http://localhost:3002/api/v1/auth/staff/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: passwordChangeData.email,
+          currentPassword: passwordChangeData.currentPassword,
+          newPassword: passwordChangeData.newPassword
+        })
+      });
+
+      const result = await response.json();
+      console.log('📥 API Response:', result);
+
+      toast.current?.show({
+        severity: result.success ? 'success' : 'error',
+        summary: result.success ? 'Success' : 'Error',
+        detail: result.message || 'Password change completed'
+      });
+
+      if (result.success) {
+        setShowPasswordDialog(false);
+        setPasswordChangeData({ email: '', currentPassword: '', newPassword: '' });
+      }
+    } catch (error) {
+      console.error('❌ Password change error:', error);
+      toast.current?.show({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to change password. Please try again.'
+      });
+    }
+  };
+
   const statusBodyTemplate = (rowData: StaffMember) => (
     <Tag 
       value={rowData.isActive ? 'Active' : 'Inactive'} 
@@ -201,6 +188,14 @@ const StaffManagement: React.FC = () => {
         outlined 
         onClick={() => editStaff(rowData)}
         tooltip="Edit Staff"
+        loading={loading}
+      />
+      <Button 
+        icon="pi pi-key" 
+        size="small" 
+        severity="warning"
+        onClick={() => changePassword(rowData)}
+        tooltip="Change Password"
         loading={loading}
       />
       <Button 
@@ -222,13 +217,34 @@ const StaffManagement: React.FC = () => {
     />
   );
 
+  const testBackend = async () => {
+    const isHealthy = await checkBackendHealth();
+    const staffEndpointWorks = await testStaffEndpoint();
+    
+    toast.current?.show({
+      severity: isHealthy && staffEndpointWorks ? 'success' : 'error',
+      summary: 'Backend Status',
+      detail: `Health: ${isHealthy ? '✅' : '❌'} | Staff API: ${staffEndpointWorks ? '✅' : '❌'}`,
+      life: 5000
+    });
+  };
+
   const rightToolbarTemplate = () => (
-    <Button 
-      label="Refresh" 
-      icon="pi pi-refresh" 
-      onClick={() => loadStaffList()}
-      loading={loading}
-    />
+    <div className="flex gap-2">
+      <Button 
+        label="Test Backend" 
+        icon="pi pi-cog" 
+        onClick={testBackend}
+        severity="info"
+        outlined
+      />
+      <Button 
+        label="Refresh" 
+        icon="pi pi-refresh" 
+        onClick={() => loadStaffList()}
+        loading={loading}
+      />
+    </div>
   );
 
   return (
@@ -344,6 +360,54 @@ const StaffManagement: React.FC = () => {
             label={editMode ? "Update" : "Save"} 
             icon="pi pi-check" 
             onClick={saveStaff}
+            loading={loading}
+          />
+        </div>
+      </Dialog>
+
+      <Dialog
+        visible={showPasswordDialog}
+        style={{ width: '400px' }}
+        header="Change Password"
+        modal
+        onHide={() => setShowPasswordDialog(false)}
+      >
+        <div className="flex flex-column gap-3">
+          <div>
+            <label htmlFor="currentPassword" className="block mb-2">Current Password *</label>
+            <InputText
+              id="currentPassword"
+              type="password"
+              value={passwordChangeData.currentPassword}
+              onChange={(e) => setPasswordChangeData({ ...passwordChangeData, currentPassword: e.target.value })}
+              className="w-full"
+              placeholder="Enter current password"
+            />
+          </div>
+          <div>
+            <label htmlFor="newPassword" className="block mb-2">New Password *</label>
+            <InputText
+              id="newPassword"
+              type="password"
+              value={passwordChangeData.newPassword}
+              onChange={(e) => setPasswordChangeData({ ...passwordChangeData, newPassword: e.target.value })}
+              className="w-full"
+              placeholder="Enter new password"
+            />
+          </div>
+        </div>
+        
+        <div className="flex justify-content-end gap-2 mt-4">
+          <Button 
+            label="Cancel" 
+            icon="pi pi-times" 
+            outlined 
+            onClick={() => setShowPasswordDialog(false)} 
+          />
+          <Button 
+            label="Change Password" 
+            icon="pi pi-check" 
+            onClick={handlePasswordChange}
             loading={loading}
           />
         </div>

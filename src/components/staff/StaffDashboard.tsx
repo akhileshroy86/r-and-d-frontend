@@ -3830,12 +3830,18 @@ const StaffDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="col-12 mt-3">
-                <div className="flex gap-2">
+              <div className="col-12 mt-4">
+                <div className="p-3 border-round bg-blue-50 border-blue-200 mb-3">
+                  <h4 className="mt-0 mb-2 text-blue-900">🔐 Security Actions</h4>
+                  <p className="m-0 text-blue-800 text-sm mb-3">
+                    Manage your account security settings and authentication methods.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <Button 
                     label="Change Password" 
                     icon="pi pi-key" 
-                    outlined
+                    className="p-button-warning"
                     onClick={() => setPasswordDialog(true)}
                   />
                   <Button 

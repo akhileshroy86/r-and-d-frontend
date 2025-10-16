@@ -37,84 +37,61 @@ const getAllUsers = () => {
   return [...staticMockUsers, ...registeredPatients, ...staffCredentials];
 };
 
-// Function to get dynamic staff credentials
+// Function to get dynamic staff credentials - DISABLED FOR DATABASE USAGE
 const getStaffCredentials = () => {
-  try {
-    const stored = localStorage.getItem('staffCredentials');
-    if (!stored) {
-      console.log('No staffCredentials in localStorage');
-      return [];
-    }
-    const parsed = JSON.parse(stored);
-    console.log('Staff credentials loaded:', parsed);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    console.error('Error parsing staff credentials:', error);
-    return [];
-  }
+  console.log('Staff credentials loading DISABLED - using database only');
+  return [];
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const mockAuthService = {
   login: async (credentials: LoginCredentials) => {
-    await delay(500); // Simulate network delay
-    
-    console.log('=== MockAuthService Login Debug ===');
-    console.log('Input credentials:', credentials);
-    
-<<<<<<< HEAD
-    // Check static mock users first
-    let user = mockUsers.find(u => u.email === credentials.email && u.password === credentials.password);
-    console.log('Static user found:', user);
-    
-    // If not found in static users, check dynamic staff credentials
-    if (!user) {
-      const staffCredentials = getStaffCredentials();
-      console.log('All staff credentials:', staffCredentials);
+    throw new Error('Mock service disabled - use real backend database');
+  },
+
+  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
       
-      for (const staffUser of staffCredentials) {
-        console.log(`Comparing: "${staffUser.email}" === "${credentials.email}" && "${staffUser.password}" === "${credentials.password}"`);
-        console.log('Email match:', staffUser.email === credentials.email);
-        console.log('Password match:', staffUser.password === credentials.password);
-        if (staffUser.email === credentials.email && staffUser.password === credentials.password) {
-          user = staffUser;
-          console.log('MATCH FOUND:', user);
-          break;
-        }
+      // For staff users, use staffAuthService which connects to the database
+      if (user.role === 'staff' || user.role === 'STAFF') {
+        const { staffAuthService } = await import('./staffAuthService');
+        return await staffAuthService.changePassword({
+          email: user.email,
+          currentPassword,
+          newPassword
+        });
       }
-    }
-=======
-    // Check all users (static + registered patients + staff)
-    const allUsers = getAllUsers();
-    let user = allUsers.find(u => u.email === credentials.email && u.password === credentials.password);
-    console.log('User found:', user);
->>>>>>> 86d4ed91866c8f9deb8ef3438ac29134fff30829
-    
-    if (!user) {
-      console.log('=== LOGIN FAILED - No matching user ===');
-      const error = new Error('Invalid email or password');
-      (error as any).response = {
-        data: { message: 'Invalid email or password' }
-      };
-      throw error;
-    }
-
-    console.log('=== LOGIN SUCCESS ===');
-    const token = `mock-token-${user.id}-${Date.now()}`;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-
-    return {
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role
+      
+      // For other users, use the API endpoint
+      const token = localStorage.getItem('token');
+      const endpoint = user.role === 'admin' ? '/api/admin/change-password' : '/api/staff/change-password';
+      
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-user-id': user.id,
+          'x-user-email': user.email
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Password change failed');
       }
-    };
+      
+      return { success: true, message: data.message };
+    } catch (error: any) {
+      throw new Error(error.message || 'Password change failed');
+    }
   },
 
   registerPatient: async (userData: PatientRegisterData) => {
@@ -219,50 +196,5 @@ export const mockAuthService = {
     return { success: true, user: JSON.parse(userStr) };
   },
 
-  changePassword: async (userId: string, currentPassword: string, newPassword: string) => {
-    await delay(500);
-    
-    // Check if user exists in all users
-    const allUsers = getAllUsers();
-    const staticUser = allUsers.find(u => u.id === userId);
-    if (staticUser) {
-      if (staticUser.password !== currentPassword) {
-        throw new Error('Current password is incorrect');
-      }
-      staticUser.password = newPassword;
-      
-      // Update localStorage user if it's the current user
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      if (currentUser.id === userId) {
-        localStorage.setItem('user', JSON.stringify({ ...currentUser, password: newPassword }));
-      }
-      
-      return { success: true, message: 'Password changed successfully' };
-    }
-    
-    // Check staff credentials
-    const staffCredentials = getStaffCredentials();
-    const staffUser = staffCredentials.find((u: any) => u.id === userId);
-    if (staffUser) {
-      if (staffUser.password !== currentPassword) {
-        throw new Error('Current password is incorrect');
-      }
-      
-      // Update staff credentials
-      const updatedStaff = staffCredentials.map((u: any) => 
-        u.id === userId ? { ...u, password: newPassword } : u
-      );
-      localStorage.setItem('staffCredentials', JSON.stringify(updatedStaff));
-      
-      // Update localStorage user if it's the current user
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-      if (currentUser.id === userId) {
-        localStorage.setItem('user', JSON.stringify({ ...currentUser, password: newPassword }));
-      }
-      
-      return { success: true, message: 'Password changed successfully' };
-    }
-    
-    throw new Error('User not found');
-  }
+
 };

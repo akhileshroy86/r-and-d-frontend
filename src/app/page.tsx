@@ -36,19 +36,6 @@ function HomeContent() {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { loading: adminLoading } = useAdminAuth();
   
-  // Debug: Check localStorage directly
-  if (typeof window !== 'undefined') {
-    const storedUser = localStorage.getItem('user');
-    console.log('Stored user in localStorage:', storedUser);
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        console.log('Parsed stored user:', parsedUser);
-      } catch (e) {
-        console.error('Error parsing stored user:', e);
-      }
-    }
-  }
   const [loginModal, setLoginModal] = useState<{
     visible: boolean;
     userType: 'patient' | 'doctor' | 'staff' | 'admin';
@@ -59,8 +46,6 @@ function HomeContent() {
   if (adminLoading) {
     return <LoadingSpinner message="Authenticating..." />;
   }
-
-
 
   const openLoginModal = (userType: 'patient' | 'doctor' | 'staff' | 'admin') => {
     if (userType === 'admin') {
@@ -74,73 +59,6 @@ function HomeContent() {
     setLoginModal(prev => ({ ...prev, visible: false }));
   };
 
-<<<<<<< HEAD
-  // Always show login selection page
-  return (
-    <>
-      <div className="min-h-screen flex align-items-center justify-content-center bg-gray-50">
-        <Card className="w-full max-w-md shadow-3">
-            <div className="text-center">
-              <div className="mb-4">
-                <i className="pi pi-heart text-6xl text-primary mb-3"></i>
-                <h1 className="text-3xl font-bold text-primary mb-2">
-                  Healthcare Management
-                </h1>
-                <p className="text-600 text-lg">
-                  Complete healthcare solution for patients, doctors & staff
-                </p>
-              </div>
-              
-              <div className="flex flex-column gap-3 mt-5">
-                <Button 
-                  label="Patient Login" 
-                  icon="pi pi-user" 
-                  className="w-full p-3 text-lg"
-                  onClick={() => openLoginModal('patient')}
-                />
-                <Button 
-                  label="Doctor Login" 
-                  icon="pi pi-user-edit" 
-                  className="w-full p-3 text-lg"
-                  severity="secondary"
-                  outlined
-                  onClick={() => openLoginModal('doctor')}
-                />
-                <Button 
-                  label="Staff Login" 
-                  icon="pi pi-users" 
-                  className="w-full p-3 text-lg"
-                  severity="info"
-                  outlined
-                  onClick={() => router.push('/auth')}
-                />
-                <Button 
-                  label="Staff Login (Modal)" 
-                  icon="pi pi-users" 
-                  className="w-full p-3 text-lg"
-                  severity="info"
-                  text
-                  onClick={() => openLoginModal('staff')}
-                />
-                <Button 
-                  label="Admin Login" 
-                  icon="pi pi-cog" 
-                  className="w-full p-3 text-lg"
-                  severity="danger"
-                  outlined
-                  onClick={() => openLoginModal('admin')}
-                />
-              </div>
-              
-              <div className="mt-5 pt-4 border-top-1 surface-border">
-                <p className="text-sm text-500">
-                  Multi-language support • Voice symptoms • Queue management
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-=======
   if (!isAuthenticated) {
     return (
       <div style={{ 
@@ -176,8 +94,6 @@ function HomeContent() {
         <ApiArchitectureSection />
         <CtaSection />
         <div id="contact"><FooterSection /></div>
-
->>>>>>> 86d4ed91866c8f9deb8ef3438ac29134fff30829
         
         <LoginModal
           visible={loginModal.visible}
@@ -192,11 +108,6 @@ function HomeContent() {
       </div>
     );
   }
-
-  // Debug: Log user data
-  console.log('Current user:', user);
-  console.log('User role:', user?.role);
-  console.log('Is authenticated:', isAuthenticated);
 
   // Render appropriate dashboard based on user role
   switch (user?.role?.toLowerCase()) {

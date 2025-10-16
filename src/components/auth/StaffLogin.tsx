@@ -34,55 +34,57 @@ const StaffLogin: React.FC = () => {
 
     setLoading(true);
     
-    // Quick test - allow known credentials
-    const validCredentials = [
-      { email: 'sai@gmail.com', password: 'sai', name: 'sai sai' },
-      { email: 'shiva@gmail.com', password: 'shiva', name: 'Shiva Ganesh' }
-    ];
-    
-    const validUser = validCredentials.find(cred => 
-      cred.email === credentials.email && cred.password === credentials.password
-    );
-    
-    if (validUser) {
-      // Simulate successful login
-      const mockUser = {
-        id: 'staff_' + Date.now(),
-        name: validUser.name,
-        email: validUser.email,
-        role: 'staff',
-        position: 'Staff'
-      };
+    try {
+      // Fetch staff from database
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/staff`);
+      const data = await response.json();
+      const staffList = Array.isArray(data) ? data : data.data || [];
       
-      const mockToken = 'mock_token_' + Date.now();
+      // Find staff member with matching email
+      const staff = staffList.find((s: any) => s.email === credentials.email);
       
-      localStorage.setItem('token', mockToken);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      
-      dispatch(loginSuccess({
-        user: mockUser,
-        token: mockToken
-      }));
-      
+      if (staff) {
+        const user = {
+          id: staff.id,
+          name: staff.fullName || staff.name,
+          email: staff.email,
+          role: 'staff',
+          position: staff.position || 'Staff'
+        };
+        
+        const token = 'staff_token_' + Date.now();
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        dispatch(loginSuccess({
+          user,
+          token
+        }));
+        
+        toast.current?.show({
+          severity: 'success',
+          summary: 'Login Successful',
+          detail: `Welcome ${user.name}!`,
+          life: 3000
+        });
+        
+        router.push('/staff');
+      } else {
+        toast.current?.show({
+          severity: 'error',
+          summary: 'Login Failed',
+          detail: 'Staff member not found in database',
+          life: 5000
+        });
+      }
+    } catch (error) {
       toast.current?.show({
-        severity: 'success',
-        summary: 'Login Successful',
-        detail: `Welcome ${mockUser.name}!`,
-        life: 3000
+        severity: 'error',
+        summary: 'Login Error',
+        detail: 'Unable to connect to server',
+        life: 5000
       });
-      
-      setLoading(false);
-      router.push('/staff');
-      return;
     }
-    
-    // If not valid, show error
-    toast.current?.show({
-      severity: 'error',
-      summary: 'Login Failed',
-      detail: 'Invalid credentials. Use sai@gmail.com/sai or shiva@gmail.com/shiva',
-      life: 5000
-    });
     
     setLoading(false);
   };
